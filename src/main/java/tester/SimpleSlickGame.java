@@ -1,51 +1,45 @@
 package tester;
 
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.*;
 import org.lwjgl.util.glu.GLU;
+import org.lwjgl.util.vector.Matrix4f;
 import org.newdawn.slick.*;
+import org.newdawn.slick.opengl.SlickCallable;
 import org.newdawn.slick.opengl.pbuffer.FBOGraphics;
 
-
+import java.nio.FloatBuffer;
+import java.nio.ShortBuffer;
 import java.util.ArrayList;
 
-import static org.lwjgl.opengl.EXTFramebufferObject.GL_COLOR_ATTACHMENT0_EXT;
-import static org.lwjgl.opengl.EXTFramebufferObject.GL_DEPTH_ATTACHMENT_EXT;
-import static org.lwjgl.opengl.EXTFramebufferObject.GL_FRAMEBUFFER_EXT;
-import static org.lwjgl.opengl.EXTFramebufferObject.GL_RENDERBUFFER_EXT;
-import static org.lwjgl.opengl.EXTFramebufferObject.glBindFramebufferEXT;
-import static org.lwjgl.opengl.EXTFramebufferObject.glBindRenderbufferEXT;
-import static org.lwjgl.opengl.EXTFramebufferObject.glFramebufferRenderbufferEXT;
-import static org.lwjgl.opengl.EXTFramebufferObject.glFramebufferTexture2DEXT;
-import static org.lwjgl.opengl.EXTFramebufferObject.glGenFramebuffersEXT;
-import static org.lwjgl.opengl.EXTFramebufferObject.glGenRenderbuffersEXT;
-import static org.lwjgl.opengl.EXTFramebufferObject.glRenderbufferStorageEXT;
+import static org.lwjgl.opengl.EXTFramebufferObject.*;
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
+import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
+import static org.lwjgl.opengl.GL30.glBindVertexArray;
+import static org.lwjgl.opengl.GL30.glGenVertexArrays;
 
 public class SimpleSlickGame extends BasicGame {
+  final static int w = 1024;
+  final static int h = 1024;
   int colorTextureID;
   int framebufferID;
   int depthRenderBufferID;
   int angle = 0;
   ShaderTester shaderTester;
-
-
   Image gandalf;
   Image empty;
   Image shadowCasters;
   FBOGraphics shadowCastersFBO;
-
   Image distanceCalcTexture;
   FBOGraphics distanceCalcFBO;
-
   Image distortionCalcTexture;
   FBOGraphics distortionCalcFBO;
-
   ArrayList<FBOGraphics> reductionCalcFBO = new ArrayList<FBOGraphics>();
   ArrayList<Image> reductionCalcTexture = new ArrayList<Image>();
-
   Image shadowsTexture;
   FBOGraphics shadowsFBO;
-
   int targetTextureDimensionLocation_ReductionProgram;
   int textureDimensionsLocation_DistanceProgram;
   int renderTargetSizeLoaction_DrawProgram;
@@ -53,53 +47,166 @@ public class SimpleSlickGame extends BasicGame {
   int shadowTextureSamplerLoaction_DrawProgram;
   int targetTextureLocation_ReductionProgram;
   int inputSamplerLoaction_ReductionProgram;
-
-
+  int mvpLocation;
   int textureLocation;
   int resolutionLocation;
-  final static int w = 1024;
-  final static int h = 1024;
+  int vao;
+  int indicesBuffer;
+  int vertexBuffer;
+  int uvBuffer;
+  Matrix4f mvp;
+  FloatBuffer mat4Buffer = BufferUtils.createFloatBuffer(16);
 
   public SimpleSlickGame(String gamename) {
     super(gamename);
   }
 
+  public static void main(String[] args) {
+    try {
+      AppGameContainer appgc;
+      appgc = new AppGameContainer(new SimpleSlickGame("Simple Slick Game"));
+      appgc.setDisplayMode(w, h, false);
+      appgc.start();
+    } catch (SlickException ex) {
+      ex.printStackTrace();
+    }
+  }
+
+  /**
+   * Sets the given matrix to an orthographic 2D projection matrix, and returns it. If the given matrix
+   * is null, a new one will be created and returned.
+   *
+   * @param m      the matrix to re-use, or null to create a new matrix
+   * @param x
+   * @param y
+   * @param width
+   * @param height
+   * @param near   near clipping plane
+   * @param far    far clipping plane
+   * @return the given matrix, or a newly created matrix if none was specified
+   */
+  public static Matrix4f toOrtho2D(Matrix4f m, float x, float y, float width, float height, float near, float far) {
+    return toOrtho(m, x, x + width, y, y + height, near, far);
+  }
+
+  /**
+   * Sets the given matrix to an orthographic projection matrix, and returns it. If the given matrix
+   * is null, a new one will be created and returned.
+   *
+   * @param m      the matrix to re-use, or null to create a new matrix
+   * @param left
+   * @param right
+   * @param bottom
+   * @param top
+   * @param near   near clipping plane
+   * @param far    far clipping plane
+   * @return the given matrix, or a newly created matrix if none was specified
+   */
+  public static Matrix4f toOrtho(Matrix4f m, float left, float right, float bottom, float top,
+                                 float near, float far) {
+    if (m == null)
+      m = new Matrix4f();
+    float x_orth = 2.0f / (right - left);
+    float y_orth = 2.0f / (top - bottom);
+    float z_orth = -2.0f / (far - near);
+
+    float tx = -(right + left) / (right - left);
+    float ty = -(top + bottom) / (top - bottom);
+    float tz = -(far + near) / (far - near);
+
+    m.m00 = x_orth;
+    m.m10 = 0;
+    m.m20 = 0;
+    m.m30 = 0;
+    m.m01 = 0;
+    m.m11 = y_orth;
+    m.m21 = 0;
+    m.m31 = 0;
+    m.m02 = 0;
+    m.m12 = 0;
+    m.m22 = z_orth;
+    m.m32 = 0;
+    m.m03 = tx;
+    m.m13 = ty;
+    m.m23 = tz;
+    m.m33 = 1;
+    return m;
+  }
+
   @Override
   public void init(GameContainer gc) throws SlickException {
     gandalf = new Image("res/sprites/entities/testEntity1.png");
-    empty = new Image(w,h);
+    empty = new Image(w, h);
     shaderTester = new ShaderTester();
     GL11.glEnable(GL11.GL_TEXTURE);
 
-    textureLocation = GL20.glGetUniformLocation(shaderTester.testProgram,"texture");
-    resolutionLocation = GL20.glGetUniformLocation(shaderTester.testProgram,"resolution");
-    targetTextureDimensionLocation_ReductionProgram = GL20.glGetUniformLocation(shaderTester.reductionProgram,"targetTextureDimensions");
-    textureDimensionsLocation_DistanceProgram = GL20.glGetUniformLocation(shaderTester.distanceProgram,"textureDimension");
-    renderTargetSizeLoaction_DrawProgram = GL20.glGetUniformLocation(shaderTester.drawProgram,"renderTargetSize");
-    shadowMapSamplerLoaction_DrawProgram = GL20.glGetUniformLocation(shaderTester.drawProgram,"shadowMapSampler");
-    shadowTextureSamplerLoaction_DrawProgram = GL20.glGetUniformLocation(shaderTester.drawProgram,"shadowTextureSampler");
-    targetTextureLocation_ReductionProgram = GL20.glGetUniformLocation(shaderTester.reductionProgram,"targetTexture");
-    inputSamplerLoaction_ReductionProgram = GL20.glGetUniformLocation(shaderTester.reductionProgram,"inputSampler");
+    textureLocation = GL20.glGetUniformLocation(shaderTester.testProgram, "texture");
+    resolutionLocation = GL20.glGetUniformLocation(shaderTester.testProgram, "resolution");
+    mvpLocation = GL20.glGetUniformLocation(shaderTester.testProgram, "mvp");
 
-    shadowCasters = new Image(w,h);
+    targetTextureDimensionLocation_ReductionProgram = GL20.glGetUniformLocation(shaderTester.reductionProgram, "targetTextureDimensions");
+    textureDimensionsLocation_DistanceProgram = GL20.glGetUniformLocation(shaderTester.distanceProgram, "textureDimension");
+    renderTargetSizeLoaction_DrawProgram = GL20.glGetUniformLocation(shaderTester.drawProgram, "renderTargetSize");
+    shadowMapSamplerLoaction_DrawProgram = GL20.glGetUniformLocation(shaderTester.drawProgram, "shadowMapSampler");
+    shadowTextureSamplerLoaction_DrawProgram = GL20.glGetUniformLocation(shaderTester.drawProgram, "shadowTextureSampler");
+    targetTextureLocation_ReductionProgram = GL20.glGetUniformLocation(shaderTester.reductionProgram, "targetTexture");
+    inputSamplerLoaction_ReductionProgram = GL20.glGetUniformLocation(shaderTester.reductionProgram, "inputSampler");
+
+    shadowCasters = new Image(w, h);
     shadowCastersFBO = new FBOGraphics(shadowCasters);
 
-    distanceCalcTexture = new Image(w,h);
+    distanceCalcTexture = new Image(w, h);
     distanceCalcFBO = new FBOGraphics(distanceCalcTexture);
 
-    distortionCalcTexture = new Image(w,h);
+    distortionCalcTexture = new Image(w, h);
     distortionCalcFBO = new FBOGraphics(distortionCalcTexture);
 
-    shadowsTexture = new Image(w,h);
+    shadowsTexture = new Image(w, h);
     shadowsFBO = new FBOGraphics(shadowsTexture);
 
-    int nReductions = (int)(Math.log(distortionCalcTexture.getWidth())/Math.log(2)+1e-12);
-    for (int i = 1; i < nReductions ; i++) {
+    int nReductions = (int) (Math.log(distortionCalcTexture.getWidth()) / Math.log(2) + 1e-12);
+    for (int i = 1; i < nReductions; i++) {
       reductionCalcTexture.add(new Image((int) Math.pow(2, i), h));
       reductionCalcFBO.add(new FBOGraphics(reductionCalcTexture.get(i - 1)));
     }
 
 
+    vertexBuffer = glGenBuffers();
+
+    glBindBuffer(GL15.GL_ARRAY_BUFFER, vertexBuffer);
+    glBufferData(GL15.GL_ARRAY_BUFFER, (FloatBuffer) BufferUtils.createFloatBuffer(12).put(new float[]{
+            0, 0, 0.0f,
+            1024, 0, 0.0f,
+            1024, 1024, 0.0f,
+            0, 1024, 0.0f})
+            .flip(), GL15.GL_STATIC_DRAW);
+
+    indicesBuffer = glGenBuffers();
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indicesBuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, (ShortBuffer) BufferUtils.createShortBuffer(6).put(new short[]{
+            0, 1, 2,
+            2, 3, 0
+    }).flip(), GL_STATIC_DRAW);
+
+    uvBuffer = glGenBuffers();
+    glBindBuffer(GL15.GL_ARRAY_BUFFER, uvBuffer);
+    glBufferData(GL15.GL_ARRAY_BUFFER, (FloatBuffer) BufferUtils.createFloatBuffer(8).put(new float[]{
+            0, 0,
+            1, 0,
+            1, 1,
+            0, 1,
+
+    }).flip(), GL_STATIC_DRAW);
+
+    vao = glGenVertexArrays();
+
+
+    Matrix4f model = new Matrix4f();
+    Matrix4f view = new Matrix4f();
+    Matrix4f projection = toOrtho2D(null, 0, 0, w, h, 1, -1);
+
+    mvp = Matrix4f.mul(projection, view, null);
+    Matrix4f.mul(mvp, model, mvp);
 
   }
 
@@ -119,11 +226,7 @@ public class SimpleSlickGame extends BasicGame {
 
     //************* distance step
     Graphics.setCurrent(distanceCalcFBO);
-    shaderTester.useProgram(shaderTester.distanceProgram);
-    GL20.glUniform2f(textureDimensionsLocation_DistanceProgram, distanceCalcTexture.getWidth(), distanceCalcTexture.getHeight());
 
-    distanceCalcFBO.drawImage(shadowCasters, 0, 0);
-    shaderTester.stopUsingProgram();
 
     //************ distortion step
     Graphics.setCurrent(distortionCalcFBO);
@@ -134,9 +237,9 @@ public class SimpleSlickGame extends BasicGame {
     //*************** reductionCalcFBO
     shaderTester.useProgram(shaderTester.reductionProgram);
     Graphics.setCurrent(reductionCalcFBO.get(reductionCalcFBO.size() - 1));
-    GL20.glUniform2i(targetTextureDimensionLocation_ReductionProgram, reductionCalcTexture.get(reductionCalcTexture.size()-1).getWidth(), h);
+    GL20.glUniform2i(targetTextureDimensionLocation_ReductionProgram, reductionCalcTexture.get(reductionCalcTexture.size() - 1).getWidth(), h);
     GL13.glActiveTexture(GL13.GL_TEXTURE0);
-    reductionCalcTexture.get(reductionCalcTexture.size()-1).bind();
+    reductionCalcTexture.get(reductionCalcTexture.size() - 1).bind();
     GL20.glUniform1i(targetTextureLocation_ReductionProgram, 0);
     GL13.glActiveTexture(GL13.GL_TEXTURE1);
     distortionCalcTexture.bind();
@@ -145,10 +248,10 @@ public class SimpleSlickGame extends BasicGame {
     reductionCalcFBO.get(reductionCalcTexture.size() - 1).drawImage(distortionCalcTexture, 0, 0);
 
     for (int i = 1; i < reductionCalcFBO.size(); i++) {
-      int n = reductionCalcFBO.size()-1-i;
+      int n = reductionCalcFBO.size() - 1 - i;
       Graphics.setCurrent(reductionCalcFBO.get(n));
-      Image currentTexture = reductionCalcTexture.get(n+1);
-      GL20.glUniform2i(targetTextureDimensionLocation_ReductionProgram,reductionCalcTexture.get(n).getWidth(),h);
+      Image currentTexture = reductionCalcTexture.get(n + 1);
+      GL20.glUniform2i(targetTextureDimensionLocation_ReductionProgram, reductionCalcTexture.get(n).getWidth(), h);
       GL13.glActiveTexture(GL13.GL_TEXTURE0);
       reductionCalcTexture.get(n).bind(); //target
       GL20.glUniform1i(targetTextureLocation_ReductionProgram, 0);
@@ -178,35 +281,52 @@ public class SimpleSlickGame extends BasicGame {
     shaderTester.stopUsingProgram();
 
 
-
     //******** start drawing to screen
     Graphics.setCurrent(g);
     g.clear();
 
-    int offset=0;
-    for(Image i:reductionCalcTexture){
-      g.drawImage(i,offset,0);
-      offset+=i.getWidth()+1;
-    }
-    g.drawImage(shadowsTexture,0,0);
-    //g.drawImage(shadowCasters,0,0);
-    //blend shadows
+    SlickCallable.enterSafeBlock();
+    shaderTester.useProgram(shaderTester.testProgram);
+
+
+    GL13.glActiveTexture(GL13.GL_TEXTURE0);
+    GL11.glBindTexture(GL11.GL_TEXTURE_2D, shadowCasters.getTexture().getTextureID());
+    GL20.glUniform1i(textureLocation, 0);
+
+
+    glBindVertexArray(vao);
+
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+    glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+
+    glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
+    glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indicesBuffer);
+
+    GL20.glUniform2f(resolutionLocation, distanceCalcTexture.getWidth(), distanceCalcTexture.getHeight());
+
+    mvp.store(mat4Buffer);
+    mat4Buffer.flip();//prepare for read
+    GL20.glUniformMatrix4(mvpLocation, false, mat4Buffer);
+
+
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+
+    GL20.glDisableVertexAttribArray(0);
+    GL20.glDisableVertexAttribArray(1);
+    GL15.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    GL30.glBindVertexArray(0);
+
+    shaderTester.stopUsingProgram();
+    SlickCallable.leaveSafeBlock();
+
 
     g.flush();
 
   }
-
-  public static void main(String[] args) {
-    try {
-      AppGameContainer appgc;
-      appgc = new AppGameContainer(new SimpleSlickGame("Simple Slick Game"));
-      appgc.setDisplayMode(w, h, false);
-      appgc.start();
-    } catch (SlickException ex) {
-
-    }
-  }
-
 
   public void initGL() {
 
@@ -276,7 +396,7 @@ public class SimpleSlickGame extends BasicGame {
 
     glColor3f(0,0,1);                                               // set color to yellow
     drawBox();
-    g.drawImage(gandalf,0,0);
+    g.drawImage(gandalf, 0, 0);
 
 
     // Normal render pass, draw cube with texture

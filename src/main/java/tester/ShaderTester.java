@@ -1,20 +1,13 @@
 package tester;
 
-import org.lwjgl.opengl.*;
+import org.lwjgl.opengl.ARBFragmentShader;
+import org.lwjgl.opengl.ARBShaderObjects;
+import org.lwjgl.opengl.ARBVertexShader;
+import org.lwjgl.opengl.GL11;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-
-import static org.lwjgl.opengl.EXTFramebufferObject.glBindFramebufferEXT;
-import static org.lwjgl.opengl.EXTFramebufferObject.glFramebufferTexture2DEXT;
-import static org.lwjgl.opengl.GL11.*;
 
 /**
  * Created by P on 05.08.2015.
@@ -36,31 +29,6 @@ public class ShaderTester {
     public ShaderTester() {
         init();
     }
-
-    private void init() {
-        testProgram = loadShaderProgram("res/shaderinos/passthrough.vert", "res/shaderinos/calcDistances.frag");
-        distanceProgram = loadShaderProgram("res/shaderinos/passthrough.vert","res/shaderinos/calcDistances.frag");
-        distortionProgram =  loadShaderProgram("res/shaderinos/passthrough.vert","res/shaderinos/distortImage.frag");
-        reductionProgram = loadShaderProgram("res/shaderinos/passthrough.vert","res/shaderinos/horizontalReduction.frag");
-        drawProgram = loadShaderProgram("res/shaderinos/passthrough.vert","res/shaderinos/drawShadows.frag");
-
-    }
-
-    public void calculateShadows() {
-        //GL_Helper.renderToFBO(shadowCastersFBO,Config.WIDTH,Config.HEIGHT);
-        //ARBShaderObjects.glUseProgramObjectARB(distanceProgram);
-
-    }
-
-    public void useProgram(int program) {
-        ARBShaderObjects.glUseProgramObjectARB(program);
-    }
-
-    public void stopUsingProgram() {
-        ARBShaderObjects.glUseProgramObjectARB(0);
-    }
-
-
 
     /**
      * loads a shader program from file
@@ -127,7 +95,7 @@ public class ShaderTester {
             ARBShaderObjects.glCompileShaderARB(shader);
 
             if (ARBShaderObjects.glGetObjectParameteriARB(shader, ARBShaderObjects.GL_OBJECT_COMPILE_STATUS_ARB) == GL11.GL_FALSE)
-                throw new RuntimeException("Error creating shader: " + getLogInfo(shader));
+                throw new RuntimeException("Error creating shader " + filename + ": " + getLogInfo(shader));
 
             return shader;
         } catch (Exception exc) {
@@ -138,12 +106,35 @@ public class ShaderTester {
 
     private static String readFileAsString(String filename) throws IOException {
         //TODO specify file encoding (this code will break on other platforms)
-       return new String(Files.readAllBytes(Paths.get(filename)));
+        return new String(Files.readAllBytes(Paths.get(filename)));
 
     }
 
     private static String getLogInfo(int obj) {
         return ARBShaderObjects.glGetInfoLogARB(obj, ARBShaderObjects.glGetObjectParameteriARB(obj, ARBShaderObjects.GL_OBJECT_INFO_LOG_LENGTH_ARB));
+    }
+
+    private void init() {
+        testProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/testFragger.frag");
+        distanceProgram = loadShaderProgram("res/shaderinos/passthrough.vert", "res/shaderinos/calcDistances.frag");
+        distortionProgram = loadShaderProgram("res/shaderinos/passthrough.vert", "res/shaderinos/distortImage.frag");
+        reductionProgram = loadShaderProgram("res/shaderinos/passthrough.vert", "res/shaderinos/horizontalReduction.frag");
+        drawProgram = loadShaderProgram("res/shaderinos/passthrough.vert", "res/shaderinos/drawShadows.frag");
+
+    }
+
+    public void calculateShadows() {
+        //GL_Helper.renderToFBO(shadowCastersFBO,Config.WIDTH,Config.HEIGHT);
+        //ARBShaderObjects.glUseProgramObjectARB(distanceProgram);
+
+    }
+
+    public void useProgram(int program) {
+        ARBShaderObjects.glUseProgramObjectARB(program);
+    }
+
+    public void stopUsingProgram() {
+        ARBShaderObjects.glUseProgramObjectARB(0);
     }
 
 }
