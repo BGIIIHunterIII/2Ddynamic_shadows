@@ -1,3 +1,4 @@
+#version 330
 /*
 * calculates and outputs the distance from the center of shadowCastersTexture for each
 * non transparent pixel
@@ -11,17 +12,15 @@ in vec2 UV;
 uniform sampler2D shadowCastersTexture;
 uniform vec2 textureDimension;
 
-
+out vec4 color;
 
 void main(){
 
-    vec2 UV = gl_TexCoord[0].st;
-    vec4 color = texture2D(shadowCastersTexture,UV);
+    color = texture2D(shadowCastersTexture,UV);
 
-    vec2 position = (gl_FragCoord.xy / textureDimension.xy) - vec2(0.5);
-    position.x *= textureDimension.x / textureDimension.y;
+    vec2 position = UV - vec2(0.5);
     float dist = color.a > 0.3f?length(position):1.0f;
 
-    //dist *= textureDimension.x;
-    gl_FragColor = vec4(dist,0,0,1);
+    dist *= textureDimension.x;
+    color = vec4(dist,0,0,1);
 }

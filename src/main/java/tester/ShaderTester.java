@@ -3,11 +3,27 @@ package tester;
 import org.lwjgl.opengl.ARBFragmentShader;
 import org.lwjgl.opengl.ARBShaderObjects;
 import org.lwjgl.opengl.ARBVertexShader;
+import org.lwjgl.opengl.EXTFramebufferObject;
 import org.lwjgl.opengl.GL11;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+
+import static org.lwjgl.opengl.GL11.GL_FLOAT;
+import static org.lwjgl.opengl.GL11.GL_LINEAR;
+import static org.lwjgl.opengl.GL11.GL_RGBA;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_MAG_FILTER;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_MIN_FILTER;
+import static org.lwjgl.opengl.GL11.glBindTexture;
+import static org.lwjgl.opengl.GL11.glGenTextures;
+import static org.lwjgl.opengl.GL11.glTexImage2D;
+import static org.lwjgl.opengl.GL11.glTexParameteri;
+import static org.lwjgl.opengl.GL30.GL_RGBA32F;
 
 /**
  * Created by P on 05.08.2015.
@@ -116,10 +132,10 @@ public class ShaderTester {
 
     private void init() {
         testProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/testFragger.frag");
-        distanceProgram = loadShaderProgram("res/shaderinos/passthrough.vert", "res/shaderinos/calcDistances.frag");
-        distortionProgram = loadShaderProgram("res/shaderinos/passthrough.vert", "res/shaderinos/distortImage.frag");
+        distanceProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/calcDistances.frag");
+        distortionProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/distortImage.frag");
         reductionProgram = loadShaderProgram("res/shaderinos/passthrough.vert", "res/shaderinos/horizontalReduction.frag");
-        drawProgram = loadShaderProgram("res/shaderinos/passthrough.vert", "res/shaderinos/drawShadows.frag");
+        drawProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/drawShadows.frag");
 
     }
 
@@ -135,6 +151,28 @@ public class ShaderTester {
 
     public void stopUsingProgram() {
         ARBShaderObjects.glUseProgramObjectARB(0);
+    }
+
+    public void genFBOwithRGBA32F(Integer fboID, Integer textureID, int width, int height){
+
+        textureID = glGenTextures();
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, (java.nio.ByteBuffer) null); // implicitly create new ByteBuffer
+
+        IntBuffer buffer = ByteBuffer.allocateDirect(1 * 4).order(ByteOrder.nativeOrder()).asIntBuffer(); // allocate a 1 int byte buffer
+        EXTFramebufferObject.glGenFramebuffersEXT(buffer); // generate
+        fboID = buffer.get();
+
+        EXTFramebufferObject.glBindFramebufferEXT(EXTFramebufferObject.GL_FRAMEBUFFER_EXT, fboID );
+        EXTFramebufferObject.glFramebufferTexture2DEXT(EXTFramebufferObject.GL_FRAMEBUFFER_EXT, EXTFramebufferObject.GL_COLOR_ATTACHMENT0_EXT,
+            GL11.GL_TEXTURE_2D, textureID, 0);
+        EXTFramebufferObject.glBindFramebufferEXT(EXTFramebufferObject.GL_FRAMEBUFFER_EXT, 0);
+
+
+
+
     }
 
 }

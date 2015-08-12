@@ -1,3 +1,4 @@
+#version 130
 //define our sampler2D object, i.e. texture
 uniform sampler2D tex0;
 

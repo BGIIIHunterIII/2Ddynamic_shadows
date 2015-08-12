@@ -3,6 +3,7 @@
 in vec2 UV;
 
 uniform sampler2D texture;
+uniform sampler2D texture1;
 uniform vec2 resolution;
 
 //TODO try to filter everything except red
@@ -19,5 +20,5 @@ void main()
 
 
 	color = vec4(color.rgb*colorIntensity,1);
-	color = vec4(0,1,1,1);
+
 }

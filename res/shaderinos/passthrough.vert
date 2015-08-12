@@ -1,7 +1,7 @@
-
+#version 130
 
 // Output data ; will be interpolated for each fragment.
-out vec2 UV;
+varying vec2 UV;
 
 void main(){
 
