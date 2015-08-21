@@ -1,29 +1,19 @@
 package tester;
 
-import org.lwjgl.opengl.ARBFragmentShader;
-import org.lwjgl.opengl.ARBShaderObjects;
-import org.lwjgl.opengl.ARBVertexShader;
-import org.lwjgl.opengl.EXTFramebufferObject;
-import org.lwjgl.opengl.GL11;
+import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.*;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.IntBuffer;
+import java.nio.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-import static org.lwjgl.opengl.GL11.GL_FLOAT;
-import static org.lwjgl.opengl.GL11.GL_LINEAR;
-import static org.lwjgl.opengl.GL11.GL_RGBA;
-import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
-import static org.lwjgl.opengl.GL11.GL_TEXTURE_MAG_FILTER;
-import static org.lwjgl.opengl.GL11.GL_TEXTURE_MIN_FILTER;
-import static org.lwjgl.opengl.GL11.glBindTexture;
-import static org.lwjgl.opengl.GL11.glGenTextures;
-import static org.lwjgl.opengl.GL11.glTexImage2D;
-import static org.lwjgl.opengl.GL11.glTexParameteri;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
+import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 import static org.lwjgl.opengl.GL30.GL_RGBA32F;
+import static org.lwjgl.opengl.GL30.glBindVertexArray;
 
 /**
  * Created by P on 05.08.2015.
@@ -41,6 +31,11 @@ public class ShaderTester {
 
     int texture;
     int fbo;
+
+    int vaoStream;
+    int streamVBO;
+    int indicesBuffer;
+    int uvBuffer;
 
     public ShaderTester() {
         init();
@@ -70,7 +65,7 @@ public class ShaderTester {
             System.err.println(ex.getMessage());
         } finally {
             if (vertShader == 0 || fragShader == 0)
-                throw new IllegalArgumentException("couldn't load shaders");
+                throw new IllegalArgumentException("couldn't load shaders, likely path is incorrect");
         }
 
         program = ARBShaderObjects.glCreateProgramObjectARB();
@@ -134,8 +129,39 @@ public class ShaderTester {
         testProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/testFragger.frag");
         distanceProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/calcDistances.frag");
         distortionProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/distortImage.frag");
-        reductionProgram = loadShaderProgram("res/shaderinos/passthrough.vert", "res/shaderinos/horizontalReduction.frag");
+        reductionProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/horizontalReduction.frag");
         drawProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/drawShadows.frag");
+
+        //******** init stream voa environment
+        streamVBO = glGenBuffers();
+        indicesBuffer = glGenBuffers();
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indicesBuffer);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, (ShortBuffer) BufferUtils.createShortBuffer(6).put(new short[]{
+                0, 1, 2,
+                2, 3, 0
+        }).flip(), GL_STATIC_DRAW);
+
+        uvBuffer = glGenBuffers();
+        glBindBuffer(GL15.GL_ARRAY_BUFFER, uvBuffer);
+        glBufferData(GL15.GL_ARRAY_BUFFER, (FloatBuffer) BufferUtils.createFloatBuffer(8).put(new float[]{
+                0, 0,
+                1, 0,
+                1, 1,
+                0, 1,
+
+        }).flip(), GL_STATIC_DRAW);
+
+        vaoStream = GL30.glGenVertexArrays();
+
+
+        glBindVertexArray(vaoStream);
+        glEnableVertexAttribArray(1);
+        glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
+        glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indicesBuffer);
+        glBindVertexArray(0);
+
 
     }
 
@@ -168,11 +194,62 @@ public class ShaderTester {
         EXTFramebufferObject.glBindFramebufferEXT(EXTFramebufferObject.GL_FRAMEBUFFER_EXT, fboID );
         EXTFramebufferObject.glFramebufferTexture2DEXT(EXTFramebufferObject.GL_FRAMEBUFFER_EXT, EXTFramebufferObject.GL_COLOR_ATTACHMENT0_EXT,
             GL11.GL_TEXTURE_2D, textureID, 0);
+
+        int framebuffer = EXTFramebufferObject.glCheckFramebufferStatusEXT(EXTFramebufferObject.GL_FRAMEBUFFER_EXT);
+        switch (framebuffer) {
+            case EXTFramebufferObject.GL_FRAMEBUFFER_COMPLETE_EXT:
+                break;
+            case EXTFramebufferObject.GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
+                throw new RuntimeException("FrameBuffer: " + fboID
+                        + ", has caused a GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT exception");
+            case EXTFramebufferObject.GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT:
+                throw new RuntimeException("FrameBuffer: " + fboID
+                        + ", has caused a GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT exception");
+            case EXTFramebufferObject.GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
+                throw new RuntimeException("FrameBuffer: " + fboID
+                        + ", has caused a GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT exception");
+            case EXTFramebufferObject.GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT:
+                throw new RuntimeException("FrameBuffer: " + fboID
+                        + ", has caused a GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT exception");
+            case EXTFramebufferObject.GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
+                throw new RuntimeException("FrameBuffer: " + fboID
+                        + ", has caused a GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT exception");
+            case EXTFramebufferObject.GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT:
+                throw new RuntimeException("FrameBuffer: " + fboID
+                        + ", has caused a GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT exception");
+            default:
+                throw new RuntimeException("Unexpected reply from glCheckFramebufferStatusEXT: " + framebuffer);
+        }
+
+        if (fboID == 0)
+            throw new RuntimeException("something went wrong during fbo creation");
+
         EXTFramebufferObject.glBindFramebufferEXT(EXTFramebufferObject.GL_FRAMEBUFFER_EXT, 0);
+    }
 
+    /**
+     * drawprogram and uniforms must be setup prior to calling this function!
+     *
+     * @param width  far rigth coordinate
+     * @param height bottom y coordinate
+     */
+    public void updateVBOandDraw(int width, int height) {
+        glBindBuffer(GL15.GL_ARRAY_BUFFER, streamVBO);
+        glBufferData(GL15.GL_ARRAY_BUFFER, (FloatBuffer) BufferUtils.createFloatBuffer(12).put(new float[]{
+                0, 0, 0.0f,
+                width, 0, 0.0f,
+                width, height, 0.0f,
+                0, height, 0.0f})
+                .flip(), GL15.GL_STREAM_DRAW);
 
+        GL30.glBindVertexArray(vaoStream);
 
+        glEnableVertexAttribArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, streamVBO);
+        glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
 
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+        GL30.glBindVertexArray(0);
     }
 
 }

@@ -1,10 +1,11 @@
-varying vec2 UV; //tex0
-uniform sampler2D targetTexture;//tex0
-uniform sampler2D inputSampler;//tex1
+#version 330
 
+in vec2 UV; //tex0
+
+uniform sampler2D inputSampler;//tex1
 uniform vec2 targetTextureDimensions;
 
-//out vec4 minValue;
+out vec4 minValue;
 
 void main(){
 
@@ -13,9 +14,7 @@ void main(){
 
     vec2 color = texture2D(inputSampler, UV).rg;
     vec2 colorR = texture2D(inputSampler,UV + vec2(0.5,0)).rg;
-    //vec2 result = min(color,colorR);
-    vec2 r = min(color,colorR);
-    float k = color==colorR?1:0;
-    gl_FragColor = vec4(r,0,1);
+    vec2 result = min(color,colorR);
+    minValue = vec4(result,0,1);
 
 }

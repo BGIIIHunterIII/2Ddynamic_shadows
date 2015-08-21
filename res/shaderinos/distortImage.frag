@@ -26,4 +26,6 @@ void main(){
 	distortedVertex  = vec4(horizontal,vertical ,0,1);
 	//debug - check if texture has correct float values (distance * texturedimension.x) almost always > 1
 	//distortedVertex = vec4(vec3(texture2D(inputSampler, UV).r>1.1f?1:0),1);
+	distortedVertex = vec4(texture2D(inputSampler,UV).rgb,1);
+
 }

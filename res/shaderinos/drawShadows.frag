@@ -17,7 +17,7 @@ void main(){
     vec2 position = UV - vec2(0.5);
     float distance = length(position);
 
-    //distance *= renderTargetSize.x;
+    distance *= renderTargetSize.x;
 	//apply a 2-pixel bias
 	distance -=2.0f/renderTargetSize.x;
 
@@ -43,7 +43,7 @@ void main(){
 	  float light = distance < shadowMapDistance ? 1:0;
 	  float debug = shadowMapDistance>1?1:0;
 
-	  result = vec4(vec3(light),1);
+	  result = vec4(vec3(debug),1);
 	  //result = vec4(texture2D(mapSampler,UV).rgb,1);
 
 
