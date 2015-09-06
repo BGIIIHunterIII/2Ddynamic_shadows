@@ -17,15 +17,23 @@ void main(){
 	v0 = v0 * abs(u0);
 	//convert back from [-1,1] domain to [0,1] domain
 	v0 = (v0 + 1.0) / 2.0;
+
 	//we now have the coordinates for reading from the initial image
 	vec2 newCoords = vec2(UV.x, v0);
 
+	vec2 horizontalV = newCoords;
+	horizontalV.y = 1-horizontalV.y;
+	vec2 verticalV = newCoords.yx;
+	verticalV.y = 1-verticalV.y;
+
+
 	//read for both horizontal and vertical direction and store them in separate channels
-	float horizontal = texture2D(inputSampler, newCoords).r;
-	float vertical = texture2D(inputSampler, newCoords.yx).r;
+	float horizontal = texture2D(inputSampler, horizontalV).r;
+	float vertical = texture2D(inputSampler, verticalV).r;
 	distortedVertex  = vec4(horizontal,vertical ,0,1);
 	//debug - check if texture has correct float values (distance * texturedimension.x) almost always > 1
-	//distortedVertex = vec4(vec3(texture2D(inputSampler, UV).r>1.1f?1:0),1);
-	distortedVertex = vec4(texture2D(inputSampler,UV).rgb,1);
+	//distortedVertex = vec4(vec3(texture2D(inputSampler, UV).r==0.8f?1:0),1);
+	//distortedVertex = vec4(texture2D(inputSampler,UV).rgb,1);
+	//distortedVertex = vec4(1,1,0,1); //yellow for ze debugging
 
 }

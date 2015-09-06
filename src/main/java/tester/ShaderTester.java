@@ -4,7 +4,8 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.*;
 
 import java.io.IOException;
-import java.nio.*;
+import java.nio.FloatBuffer;
+import java.nio.ShortBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -12,7 +13,6 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
 import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
-import static org.lwjgl.opengl.GL30.GL_RGBA32F;
 import static org.lwjgl.opengl.GL30.glBindVertexArray;
 
 /**
@@ -179,53 +179,7 @@ public class ShaderTester {
         ARBShaderObjects.glUseProgramObjectARB(0);
     }
 
-    public void genFBOwithRGBA32F(Integer fboID, Integer textureID, int width, int height){
 
-        textureID = glGenTextures();
-        glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, (java.nio.ByteBuffer) null); // implicitly create new ByteBuffer
-
-        IntBuffer buffer = ByteBuffer.allocateDirect(1 * 4).order(ByteOrder.nativeOrder()).asIntBuffer(); // allocate a 1 int byte buffer
-        EXTFramebufferObject.glGenFramebuffersEXT(buffer); // generate
-        fboID = buffer.get();
-
-        EXTFramebufferObject.glBindFramebufferEXT(EXTFramebufferObject.GL_FRAMEBUFFER_EXT, fboID );
-        EXTFramebufferObject.glFramebufferTexture2DEXT(EXTFramebufferObject.GL_FRAMEBUFFER_EXT, EXTFramebufferObject.GL_COLOR_ATTACHMENT0_EXT,
-            GL11.GL_TEXTURE_2D, textureID, 0);
-
-        int framebuffer = EXTFramebufferObject.glCheckFramebufferStatusEXT(EXTFramebufferObject.GL_FRAMEBUFFER_EXT);
-        switch (framebuffer) {
-            case EXTFramebufferObject.GL_FRAMEBUFFER_COMPLETE_EXT:
-                break;
-            case EXTFramebufferObject.GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
-                throw new RuntimeException("FrameBuffer: " + fboID
-                        + ", has caused a GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT exception");
-            case EXTFramebufferObject.GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT:
-                throw new RuntimeException("FrameBuffer: " + fboID
-                        + ", has caused a GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT exception");
-            case EXTFramebufferObject.GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
-                throw new RuntimeException("FrameBuffer: " + fboID
-                        + ", has caused a GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT exception");
-            case EXTFramebufferObject.GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT:
-                throw new RuntimeException("FrameBuffer: " + fboID
-                        + ", has caused a GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT exception");
-            case EXTFramebufferObject.GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
-                throw new RuntimeException("FrameBuffer: " + fboID
-                        + ", has caused a GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT exception");
-            case EXTFramebufferObject.GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT:
-                throw new RuntimeException("FrameBuffer: " + fboID
-                        + ", has caused a GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT exception");
-            default:
-                throw new RuntimeException("Unexpected reply from glCheckFramebufferStatusEXT: " + framebuffer);
-        }
-
-        if (fboID == 0)
-            throw new RuntimeException("something went wrong during fbo creation");
-
-        EXTFramebufferObject.glBindFramebufferEXT(EXTFramebufferObject.GL_FRAMEBUFFER_EXT, 0);
-    }
 
     /**
      * drawprogram and uniforms must be setup prior to calling this function!
