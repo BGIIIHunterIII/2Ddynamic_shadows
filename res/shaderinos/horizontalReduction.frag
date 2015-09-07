@@ -3,17 +3,17 @@
 in vec2 UV; //tex0
 
 uniform sampler2D inputSampler;
-uniform vec2 targetTextureDimensions;
+uniform vec2 normalizedSourceDimensions;
 
 out vec4 minValue;
 
 void main(){
 
+    vec2 lUV = vec2(UV.x,UV.y*0.5f);
 
     vec2 color = texture2D(inputSampler, UV).rg;
-    vec2 colorR = texture2D(inputSampler,UV + vec2(targetTextureDimensions.x,0)).rg;
+    vec2 colorR = texture2D(inputSampler,UV + vec2(normalizedSourceDimensions.x,0)).rg;
 
-    vec2 result = vec2(min(color.r,colorR.r),min(color.g,colorR.g));
+    vec2 result = min(color,colorR);
     minValue = vec4(result,0,1);
-
 }

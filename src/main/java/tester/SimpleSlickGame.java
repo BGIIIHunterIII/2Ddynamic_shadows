@@ -150,7 +150,7 @@ public class SimpleSlickGame extends BasicGame {
     resolutionLocation = GL20.glGetUniformLocation(shaderTester.testProgram, "resolution");
     mvpLocation = GL20.glGetUniformLocation(shaderTester.testProgram, "mvp");
 
-    targetTextureDimensionLocation_ReductionProgram = GL20.glGetUniformLocation(shaderTester.reductionProgram, "targetTextureDimensions");
+    targetTextureDimensionLocation_ReductionProgram = GL20.glGetUniformLocation(shaderTester.reductionProgram, "normalizedSourceDimensions");
     textureDimensionsLocation_DistanceProgram = GL20.glGetUniformLocation(shaderTester.distanceProgram, "textureDimension");
     renderTargetSizeLoaction_DrawProgram = GL20.glGetUniformLocation(shaderTester.drawProgram, "renderTargetSize");
     shadowMapSamplerLoaction_DrawProgram = GL20.glGetUniformLocation(shaderTester.drawProgram, "shadowMapSampler");
@@ -253,7 +253,7 @@ public class SimpleSlickGame extends BasicGame {
     Graphics.setCurrent(shadowCastersFBO);
 //    shadowCastersFBO.drawImage(gandalf, 100, 100);
 //    shadowCastersFBO.drawImage(gandalf, w - gandalf.getWidth(), 0);
-//    shadowCastersFBO.drawImage(gandalf, 20, h - gandalf.getHeight());
+//    shadowCastersFBO.drawImage(gandalf, 100, h - gandalf.getHeight()-200);
 //    shadowCastersFBO.drawImage(gandalf, 200 + w / 2, 100 + h / 2);
     shadowCastersFBO.drawImage(cat4, 0, 0);
 
@@ -285,7 +285,7 @@ public class SimpleSlickGame extends BasicGame {
 
     //************ distortion step
     distortionFBO.setAsActiveFBO();
-    //glBindFramebuffer(GL_FRAMEBUFFER_EXT,0);
+    //glBindFramebuffer(GL_FRAMEBUFFER_EXT, 0);
     shaderTester.useProgram(shaderTester.distortionProgram);
 
     distanceFBO.sendTextureToSamplerLocation0(inputSamplerLocation_DistortionProgram);
@@ -302,7 +302,8 @@ public class SimpleSlickGame extends BasicGame {
 
     reductionCalcFBO.get(reductionCalcFBO.size() - 1).setAsActiveFBO();
     //glBindFramebuffer(GL_FRAMEBUFFER_EXT,0);
-    reductionCalcFBO.get(reductionCalcFBO.size() - 1).sendTextureDimensionsAsUniform(targetTextureDimensionLocation_ReductionProgram);
+
+    GL20.glUniform2f(targetTextureDimensionLocation_ReductionProgram, 1.0f / distortionFBO.getWidth(), 1.0f / distortionFBO.getHeight());
     distortionFBO.sendTextureToSamplerLocation0(inputSamplerLoaction_ReductionProgram);
     GL20.glUniformMatrix4(mvpReductionProgam, false, mat4Buffer);
 
@@ -311,11 +312,11 @@ public class SimpleSlickGame extends BasicGame {
     for (int i = 1; i < reductionCalcFBO.size(); i++) {
       int n = reductionCalcFBO.size() - 1 - i;
       reductionCalcFBO.get(n).setAsActiveFBO();
-//      if(n==3){
+//      if(n==6){
 //        glBindFramebuffer(GL_FRAMEBUFFER_EXT,0);
 //      }
+      GL20.glUniform2f(targetTextureDimensionLocation_ReductionProgram, 1.0f / reductionCalcFBO.get(n + 1).getWidth(), 1.0f / reductionCalcFBO.get(n + 1).getHeight());
 
-      reductionCalcFBO.get(n).sendTextureDimensionsAsUniform(targetTextureDimensionLocation_ReductionProgram);
       reductionCalcFBO.get(n + 1).sendTextureToSamplerLocation0(inputSamplerLoaction_ReductionProgram);
       GL20.glUniformMatrix4(mvpReductionProgam, false, mat4Buffer);
 
@@ -350,6 +351,6 @@ public class SimpleSlickGame extends BasicGame {
     SlickCallable.leaveSafeBlock();
 
     Graphics.setCurrent(g);
-    //g.drawImage(shadowCasters, 0, 0);
+    g.drawImage(shadowCasters, 0, 0);
   }
 }
