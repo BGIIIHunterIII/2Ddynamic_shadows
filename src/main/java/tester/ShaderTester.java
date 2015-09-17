@@ -180,7 +180,6 @@ public class ShaderTester {
     }
 
 
-
     /**
      * drawprogram and uniforms must be setup prior to calling this function!
      *
