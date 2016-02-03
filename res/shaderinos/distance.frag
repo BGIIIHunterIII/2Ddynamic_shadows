@@ -12,4 +12,5 @@ void main(){
     float dist = texColor.a == 0?1:length(pos);
     vec4 distanceRes = vec4(vec3(dist),1);
     color = texColor;
+    color = texture2D(texture,UV);
 }
