@@ -20,6 +20,7 @@ hs_err_pid*
 *.iml
 out
 gen
+build/
 
 
 ## Directory-based project format:
