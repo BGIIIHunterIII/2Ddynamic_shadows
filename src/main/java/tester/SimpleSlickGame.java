@@ -165,7 +165,7 @@ public class SimpleSlickGame extends BasicGame {
         shadowCastersTextureLocation_DistanceProgam = GL20.glGetUniformLocation(shaderTester.distanceProgram, "shadowCastersTexture");
 
 
-        shadowCasters = new Image(w, h);
+        shadowCasters = new Image(w,h);
         shadowCastersFBO = new FBOGraphics(shadowCasters);
 
         distanceFBO = new FrameBuffer(FrameBuffer.type.FLOAT, false, w, h);
@@ -251,46 +251,16 @@ public class SimpleSlickGame extends BasicGame {
     @Override
     public void render(GameContainer gc, Graphics g) throws SlickException {
         g.clear();
-        //************ draw shadowmap
-        Graphics.setCurrent(shadowCastersFBO);
-        shadowCastersFBO.clear();
-
-
-//    shadowCastersFBO.drawImage(gandalf, 100, 100);
-//    shadowCastersFBO.drawImage(gandalf, w - gandalf.getWidth(), 0);
-//    shadowCastersFBO.drawImage(gandalf, 100, h - gandalf.getHeight()-200);
-//    shadowCastersFBO.drawImage(gandalf, 200 + w / 2, 100 + h / 2);
-
-        //draw centered around the mouse
-        //shadowCastersFBO.drawImage(cat4, Mouse.getX() - cat4.getWidth() / 2, Mouse.getY() - cat4.getHeight() / 2);
-        shadowCastersFBO.drawImage(cat4, 0, 0);
-
-
         //make sure opengl calls don't disturb slick - probably unecessary
         SlickCallable.enterSafeBlock();
 
-        //************* distance step
-        //select framebuffer
+        //distance step
         distanceFBO.setAsActiveFBO();
-        //glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-
-        //activate shader, while in use it will affect all drawing operations
+        glClear(GL_COLOR_BUFFER_BIT);
         shaderTester.useProgram(shaderTester.distanceProgram);
+        GL11.glBindTexture(GL_TEXTURE_2D,cat4.getTexture().getTextureID());
 
-        //send uniforms to the shader
-        GL13.glActiveTexture(GL13.GL_TEXTURE0);
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, shadowCasters.getTexture().getTextureID());
-        GL20.glUniform1i(shadowCastersTextureLocation_DistanceProgam, 0);
 
-        GL20.glUniform2f(textureDimensionsLocation_DistanceProgram, shadowCasters.getWidth(), shadowCasters.getHeight());
-        GL20.glUniformMatrix4(mvpDistanceProgram, false, mat4Buffer);
-
-        //draw quad consisting of two traingles
-        glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-        GL30.glBindVertexArray(0);
-
-        shaderTester.stopUsingProgram();
 
         //************ distortion step
         distortionFBO.setAsActiveFBO();
@@ -298,46 +268,18 @@ public class SimpleSlickGame extends BasicGame {
         glClear(GL_COLOR_BUFFER_BIT);
         shaderTester.useProgram(shaderTester.distortionProgram);
 
-        distanceFBO.sendTextureToSamplerLocation0(inputSamplerLocation_DistortionProgram);
+        GL11.glBindTexture(GL_TEXTURE_2D,distanceFBO.getTextureHandle());
         GL20.glUniformMatrix4(mvpDistortionProgam, false, mat4Buffer);
 
         glBindVertexArray(vao);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
         GL30.glBindVertexArray(0);
+        GL11.glBindTexture(GL_TEXTURE_2D,0);
+
 
         shaderTester.stopUsingProgram();
-
-        //*************** reductionCalcFBO
-        shaderTester.useProgram(shaderTester.reductionProgram);
-
-        reductionCalcFBO.get(reductionCalcFBO.size() - 1).setAsActiveFBO();
-        //glBindFramebuffer(GL_FRAMEBUFFER_EXT,0);
-
-        GL20.glUniform2f(targetTextureDimensionLocation_ReductionProgram, 1.0f / distortionFBO.getWidth(), 1.0f / distortionFBO.getHeight());
-        distortionFBO.sendTextureToSamplerLocation0(inputSamplerLoaction_ReductionProgram);
-        GL20.glUniformMatrix4(mvpReductionProgam, false, mat4Buffer);
-
-        shaderTester.updateVBOandDraw(w / 2, h);
-
-        for (int i = 1; i < reductionCalcFBO.size(); i++) {
-            int n = reductionCalcFBO.size() - 1 - i;
-            reductionCalcFBO.get(n).setAsActiveFBO();
-//      if(n==6){
-            //debug reduction step
-//        glBindFramebuffer(GL_FRAMEBUFFER_EXT,0);
-//      }
-            GL20.glUniform2f(targetTextureDimensionLocation_ReductionProgram, 1.0f / reductionCalcFBO.get(n + 1).getWidth(), 1.0f / reductionCalcFBO.get(n + 1).getHeight());
-
-            reductionCalcFBO.get(n + 1).sendTextureToSamplerLocation0(inputSamplerLoaction_ReductionProgram);
-            GL20.glUniformMatrix4(mvpReductionProgam, false, mat4Buffer);
-
-            shaderTester.updateVBOandDraw(reductionCalcFBO.get(n).getWidth(), reductionCalcFBO.get(n).getHeight());
-        }
-        shaderTester.stopUsingProgram();
-
 
         //************* draw shadows
-
         shadowsFBO.setAsActiveFBO();
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
@@ -346,7 +288,7 @@ public class SimpleSlickGame extends BasicGame {
         shaderTester.useProgram(shaderTester.drawProgram);
 
         GL13.glActiveTexture(GL13.GL_TEXTURE0);
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, reductionCalcFBO.get(0).getTextureHandle());
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, distortionFBO.getTextureHandle());
         GL20.glUniform1i(shadowMapSamplerLoaction_DrawProgram, 0);
 
         GL20.glUniformMatrix4(mvpDrawProgam, false, mat4Buffer);
@@ -358,11 +300,12 @@ public class SimpleSlickGame extends BasicGame {
 
         shaderTester.stopUsingProgram();
 
+        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
         SlickCallable.leaveSafeBlock();
 
         //switch back to the defaul lwjgl rendering context and draw the shadowcaster image
         Graphics.setCurrent(g);
-        g.drawImage(shadowCasters, 0, 0);
+       // g.drawImage(cat4,0,0);
     }
 }

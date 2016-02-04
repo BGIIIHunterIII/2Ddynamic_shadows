@@ -19,13 +19,14 @@ void main(){
 	v0 = (v0 + 1.0f) / 2.0f;
 
 	//we now have the coordinates for reading from the initial image
-	vec2 horizontalV = vec2(UV.x,1-v0);
-	vec2 verticalV = vec2(v0,1-UV.x);
+	vec2 horizontalV = vec2(UV.x,v0);
+	vec2 verticalV = vec2(v0,UV.x);
 
 	//read for both horizontal and vertical direction and store them in separate channels
 	float horizontal = texture2D(inputSampler, horizontalV).r;
 	float vertical = texture2D(inputSampler, verticalV).r;
 	distortedVertex  = vec4(horizontal,vertical ,0,1);
+	//distortedVertex = vec4(0,0,1,1);
 
 
 	//debug - check if texture has correct float values (distance * texturedimension.x) almost always > 1
