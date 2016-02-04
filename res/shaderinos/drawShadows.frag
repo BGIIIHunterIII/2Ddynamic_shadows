@@ -56,7 +56,7 @@ vec4 GetShadowDistanceH(vec2 TexCoord, float displacementV)
 		v0+=displacementV;
 		v0 = (v0 + 1) / 2;
 
-		vec2 newCoords = vec2(TexCoord.x,v0);
+		vec2 newCoords = vec2(TexCoord.x,1-v0);
 		//horizontal info was stored in the Red component
 		return texture2D(mapSampler, newCoords).rgba;
 }
@@ -72,7 +72,7 @@ vec4 GetShadowDistanceV(vec2 TexCoord, float displacementV)
 		v0+=displacementV;
 		v0 = (v0 + 1) / 2;
 
-		vec2 newCoords = vec2(TexCoord.y,v0);
+		vec2 newCoords = vec2(TexCoord.y,1-v0);
 
 		//vertical info was stored in the Green component
 		return texture2D(mapSampler, newCoords).rgba;

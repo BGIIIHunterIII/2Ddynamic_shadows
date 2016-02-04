@@ -256,10 +256,17 @@ public class SimpleSlickGame extends BasicGame {
 
         //distance step
         distanceFBO.setAsActiveFBO();
+//        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+
         glClear(GL_COLOR_BUFFER_BIT);
         shaderTester.useProgram(shaderTester.distanceProgram);
         GL11.glBindTexture(GL_TEXTURE_2D,cat4.getTexture().getTextureID());
-
+        GL20.glUniformMatrix4(mvpDistanceProgram, false, mat4Buffer);
+        glBindVertexArray(vao);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+        GL30.glBindVertexArray(0);
+        GL11.glBindTexture(GL_TEXTURE_2D,0);
+        shaderTester.stopUsingProgram();
 
 
         //************ distortion step
@@ -281,7 +288,7 @@ public class SimpleSlickGame extends BasicGame {
 
         //************* draw shadows
         shadowsFBO.setAsActiveFBO();
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,0);
 
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -306,6 +313,6 @@ public class SimpleSlickGame extends BasicGame {
 
         //switch back to the defaul lwjgl rendering context and draw the shadowcaster image
         Graphics.setCurrent(g);
-       // g.drawImage(cat4,0,0);
+        g.drawImage(cat4,0,0);
     }
 }

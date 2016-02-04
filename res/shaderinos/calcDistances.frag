@@ -18,10 +18,7 @@ void main(){
 
     color = texture2D(shadowCastersTexture,UV);
 
-    vec2 centerToPixel = UV - vec2(0.5);
-    float dist = color.a > 0.3f?length(centerToPixel):1.0f;
-
-    dist *= textureDimension.x; //comment out for debugging
+    float dist = color.a > 0.3f?1:0.0f;
 
     color = vec4(dist,0,0,1);
 }
