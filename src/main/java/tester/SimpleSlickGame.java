@@ -313,6 +313,6 @@ public class SimpleSlickGame extends BasicGame {
 
         //switch back to the defaul lwjgl rendering context and draw the shadowcaster image
         Graphics.setCurrent(g);
-        g.drawImage(cat4,0,0);
+       // g.drawImage(cat4,0,0);
     }
 }

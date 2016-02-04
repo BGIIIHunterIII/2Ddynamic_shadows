@@ -8,8 +8,8 @@ uniform vec2 renderTargetSize;
 
 out vec4 result;
 
-vec4 GetShadowDistanceH(vec2 TexCoord, float displacementV);
-vec4 GetShadowDistanceV(vec2 TexCoord, float displacementV);
+float GetShadowDistanceH(vec2 TexCoord, float displacementV);
+float GetShadowDistanceV(vec2 TexCoord, float displacementV);
 
 
 void main(){
@@ -30,22 +30,22 @@ void main(){
   float nY = 2.0f*( UV.y - 0.5f);
   float nX = 2.0f*( UV.x - 0.5f);
 
-  vec4 inverse;
+  vec2 inverse;
 
 	//use these to determine which quadrant we are in
 	if(abs(nY)<abs(nX))
 	{ //left or right segment
-		inverse = GetShadowDistanceH(UV,0);
+		inverse.r = GetShadowDistanceH(UV,0);
 	}
 	else
 	{ //upper or lower segment
-	  inverse = GetShadowDistanceV(UV,0);
+	  inverse.g = GetShadowDistanceV(UV,0);
 	}
-	result = inverse;
+	result = vec4(inverse,0,1);
 }
 
 
-vec4 GetShadowDistanceH(vec2 TexCoord, float displacementV)
+float GetShadowDistanceH(vec2 TexCoord, float displacementV)
 {
 		float u = TexCoord.x;
 		float v = TexCoord.y;
@@ -58,10 +58,10 @@ vec4 GetShadowDistanceH(vec2 TexCoord, float displacementV)
 
 		vec2 newCoords = vec2(TexCoord.x,1-v0);
 		//horizontal info was stored in the Red component
-		return texture2D(mapSampler, newCoords).rgba;
+		return texture2D(mapSampler, newCoords).r;
 }
 
-vec4 GetShadowDistanceV(vec2 TexCoord, float displacementV)
+float GetShadowDistanceV(vec2 TexCoord, float displacementV)
 {
 		float u = TexCoord.y;
 		float v = TexCoord.x;
@@ -75,5 +75,5 @@ vec4 GetShadowDistanceV(vec2 TexCoord, float displacementV)
 		vec2 newCoords = vec2(TexCoord.y,1-v0);
 
 		//vertical info was stored in the Green component
-		return texture2D(mapSampler, newCoords).rgba;
+		return texture2D(mapSampler, newCoords).g;
 }
