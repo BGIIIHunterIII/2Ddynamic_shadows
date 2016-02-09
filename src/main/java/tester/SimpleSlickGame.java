@@ -22,6 +22,7 @@ import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
 import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 import static org.lwjgl.opengl.GL30.glBindVertexArray;
 import static org.lwjgl.opengl.GL30.glGenVertexArrays;
+import static org.newdawn.slick.Image.FILTER_NEAREST;
 
 public class SimpleSlickGame extends BasicGame {
     final static int w = 512;
@@ -39,6 +40,7 @@ public class SimpleSlickGame extends BasicGame {
     Image cat4;
     Image empty;
     Image shadowCasters;
+    Image twopix;
     FBOGraphics shadowCastersFBO;
     Image testfboTexture;
     FBOGraphics testFBO;
@@ -143,6 +145,7 @@ public class SimpleSlickGame extends BasicGame {
     public void init(GameContainer gc) throws SlickException {
         gandalf = new Image("res/sprites/entities/testEntity1.png");
         cat4 = new Image("res/sprites/entities/cat4.png");
+        twopix = new Image("res/sprites/upsampleTest.png",false, FILTER_NEAREST);
         empty = new Image(w, h);
         shaderTester = new ShaderTester();
         GL11.glEnable(GL11.GL_TEXTURE);
@@ -346,7 +349,9 @@ public class SimpleSlickGame extends BasicGame {
         shaderTester.useProgram(shaderTester.drawProgram);
 
         GL13.glActiveTexture(GL13.GL_TEXTURE0);
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, reductionCalcFBO.get(0).getTextureHandle());
+        //GL11.glBindTexture(GL11.GL_TEXTURE_2D, reductionCalcFBO.get(0).getTextureHandle());
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D, twopix.getTexture().getTextureID());
+
         GL20.glUniform1i(shadowMapSamplerLoaction_DrawProgram, 0);
 
         GL20.glUniformMatrix4(mvpDrawProgam, false, mat4Buffer);
