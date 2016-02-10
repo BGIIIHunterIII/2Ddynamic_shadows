@@ -249,6 +249,7 @@ public class SimpleSlickGame extends BasicGame {
         testFBO = new FBOGraphics(testfboTexture);
 
         glDisable(GL_DEPTH_TEST);
+        glClearColor(0,0,0,1);
 
         int glError = glGetError();
         if(glError != 0) System.err.println("gl error during initalization: "+glError);
@@ -287,6 +288,7 @@ public class SimpleSlickGame extends BasicGame {
         //select framebuffer
         distanceFBO.setAsActiveFBO();
         //glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
 
         //activate shader, while in use it will affect all drawing operations
         shaderTester.useProgram(shaderTester.distanceProgram);
@@ -328,6 +330,8 @@ public class SimpleSlickGame extends BasicGame {
 
         reductionCalcFBO.get(reductionCalcFBO.size() - 1).setAsActiveFBO();
         //glBindFramebuffer(GL_FRAMEBUFFER_EXT,0);
+        glClear(GL_COLOR_BUFFER_BIT);
+
 
         GL20.glUniform2f(targetTextureDimensionLocation_ReductionProgram, 1.0f / distortionFBO.getWidth(), 1.0f / distortionFBO.getHeight());
         //GL11.glBindTexture(GL11.GL_TEXTURE_2D,reductionTest.getTexture().getTextureID());
@@ -344,6 +348,7 @@ public class SimpleSlickGame extends BasicGame {
 //            //debug reduction step
 //        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,0);
 //     }
+            glClear(GL_COLOR_BUFFER_BIT);
             GL20.glUniform2f(targetTextureDimensionLocation_ReductionProgram, 1.0f / reductionCalcFBO.get(n).getWidth(), 1.0f / reductionCalcFBO.get(n).getHeight());
             GL11.glBindTexture(GL11.GL_TEXTURE_2D,reductionCalcFBO.get(n+1).getTextureHandle());
             GL20.glUniformMatrix4(mvpReductionProgam, false, mat4Buffer);
@@ -357,7 +362,6 @@ public class SimpleSlickGame extends BasicGame {
 
         shadowsFBO.setAsActiveFBO();
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-
         glClear(GL_COLOR_BUFFER_BIT);
 
         shaderTester.useProgram(shaderTester.drawProgram);
