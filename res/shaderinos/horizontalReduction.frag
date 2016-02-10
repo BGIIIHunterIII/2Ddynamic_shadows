@@ -10,7 +10,7 @@ out vec4 minValue;
 void main(){
 
     vec2 color = texture(inputSampler, UV).rg;
-    vec2 colorR = texture(inputSampler,UV + vec2(1f/normalizedSourceDimensions.x,0)).rg;
+    vec2 colorR = texture(inputSampler,UV + vec2(normalizedSourceDimensions.x,0)).rg;
 
     vec2 result = min(color,colorR);
     minValue = vec4(result,0,1);

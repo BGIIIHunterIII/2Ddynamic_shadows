@@ -42,6 +42,7 @@ public class SimpleSlickGame extends BasicGame {
     Image shadowCasters;
     Image twopix;
     Image simpleRectangle;
+    Image reductionTest;
     FBOGraphics shadowCastersFBO;
     Image testfboTexture;
     FBOGraphics testFBO;
@@ -148,6 +149,7 @@ public class SimpleSlickGame extends BasicGame {
         cat4 = new Image("res/sprites/entities/cat4.png");
         simpleRectangle = new Image("res/sprites/simpleRectangle.png",false,FILTER_NEAREST);
         twopix = new Image("res/sprites/upsampleTest.png",false, FILTER_NEAREST);
+        reductionTest = new Image("res/sprites/reductionShaderTest.png",false,FILTER_NEAREST);
         empty = new Image(w, h);
         shaderTester = new ShaderTester();
 
@@ -273,10 +275,10 @@ public class SimpleSlickGame extends BasicGame {
 //    shadowCastersFBO.drawImage(gandalf, 200 + w / 2, 100 + h / 2);
 
         //draw centered around the mouse
-        //shadowCastersFBO.drawImage(cat4, Mouse.getX() - cat4.getWidth() / 2, Mouse.getY() - cat4.getHeight() / 2);
-        shadowCastersFBO.drawImage(cat4, 0, 0);
-        shadowCastersFBO.setColor(Color.blue);
-        shadowCastersFBO.fillRect(w/2-30,h/2-30,60,60);
+        shadowCastersFBO.drawImage(cat4, Mouse.getX() - cat4.getWidth() / 2, Mouse.getY() - cat4.getHeight() / 2);
+        //shadowCastersFBO.drawImage(cat4, 0, 0);
+        //shadowCastersFBO.setColor(Color.blue);
+        //shadowCastersFBO.fillRect(w/2-30,h/2-30,60,60);
 
         //make sure opengl calls don't disturb slick - probably unecessary
         SlickCallable.enterSafeBlock();
@@ -328,7 +330,9 @@ public class SimpleSlickGame extends BasicGame {
         //glBindFramebuffer(GL_FRAMEBUFFER_EXT,0);
 
         GL20.glUniform2f(targetTextureDimensionLocation_ReductionProgram, 1.0f / distortionFBO.getWidth(), 1.0f / distortionFBO.getHeight());
-        distortionFBO.sendTextureToSamplerLocation0(inputSamplerLoaction_ReductionProgram);
+        //GL11.glBindTexture(GL11.GL_TEXTURE_2D,reductionTest.getTexture().getTextureID());
+        GL11.glBindTexture(GL11.GL_TEXTURE_2D,distortionFBO.getTextureHandle());
+
         GL20.glUniformMatrix4(mvpReductionProgam, false, mat4Buffer);
 
         shaderTester.updateVBOandDraw(w / 2, h);
@@ -340,9 +344,8 @@ public class SimpleSlickGame extends BasicGame {
 //            //debug reduction step
 //        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT,0);
 //     }
-            GL20.glUniform2f(targetTextureDimensionLocation_ReductionProgram, 1.0f / reductionCalcFBO.get(n + 1).getWidth(), 1.0f / reductionCalcFBO.get(n + 1).getHeight());
-
-            reductionCalcFBO.get(n + 1).sendTextureToSamplerLocation0(inputSamplerLoaction_ReductionProgram);
+            GL20.glUniform2f(targetTextureDimensionLocation_ReductionProgram, 1.0f / reductionCalcFBO.get(n).getWidth(), 1.0f / reductionCalcFBO.get(n).getHeight());
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D,reductionCalcFBO.get(n+1).getTextureHandle());
             GL20.glUniformMatrix4(mvpReductionProgam, false, mat4Buffer);
 
             shaderTester.updateVBOandDraw(reductionCalcFBO.get(n).getWidth(), reductionCalcFBO.get(n).getHeight());
@@ -381,6 +384,9 @@ public class SimpleSlickGame extends BasicGame {
         Graphics.setCurrent(g);
         //g.drawImage(simpleRectangle, 0, 0);
         //g.drawImage(shadowCasters, 0,0);
+
+        g.drawImage(cat4, Mouse.getX() - cat4.getWidth() / 2, Mouse.getY() - cat4.getHeight() / 2);
+
 
         int glError = glGetError();
         if(glError != 0) System.err.println("gl error: "+glError);

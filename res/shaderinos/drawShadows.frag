@@ -50,8 +50,8 @@ void main(){
 
 	float debug = shadowMapDistance/512f;
 
-	result = vec4(vec3(debug),1);
-	result = vec4(texture2D(mapSampler,UV).rgb,1);
+	result = vec4(vec3(light),1);
+	//result = vec4(texture2D(mapSampler,UV).rgb,1);
 	//result = vec4(vec3(texture2D(mapSampler,UV).r/512f),1);
 
 //	  result.b = length(TexCoord - 0.5f);

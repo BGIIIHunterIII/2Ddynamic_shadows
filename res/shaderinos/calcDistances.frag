@@ -22,7 +22,7 @@ void main(){
     float dist = color.a > 0.3f?length(centerToPixel):1.0f;
 
     //dist *= textureDimension.x;
-    //dist *= 512; //comment out for debugging
+    dist *= 512; //comment out for debugging
 
     color = vec4(dist,0,0,1);
 }
