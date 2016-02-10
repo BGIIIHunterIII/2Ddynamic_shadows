@@ -31,5 +31,5 @@ void main(){
 	//debug - check if texture has correct float values (distance * texturedimension.x) almost always > 1
 	//distortedVertex = vec4(vec3(texture2D(inputSampler, UV).r==0.8f?1:0),1);
 	//distortedVertex = vec4(texture2D(inputSampler,UV).rgb,1);
-	//distortedVertex = vec4(1,1,0,1); //yellow for ze debugging
+	//distortedVertex = vec4(1,512,0,1); //yellow for ze debugging
 }
