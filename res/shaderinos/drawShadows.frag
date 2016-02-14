@@ -38,12 +38,6 @@ void main(){
 	{ //upper or lower segment
 	  shadowMapDistance = GetShadowDistanceV(UV,0);
 	}
-
-	float sH = GetShadowDistanceH(UV,0);
-	float sV = GetShadowDistanceV(UV,0);
-
-	shadowMapDistance = abs(nY) < abs(nX)?sH:sV;
-
 	//if distance to this pixel is lower than distance from shadowMap,
 	//then we are not in shadow
 	float light = distance < shadowMapDistance? 1:0;
@@ -69,7 +63,7 @@ float GetShadowDistanceH(vec2 TexCoord, float displacementV)
 		v0+=displacementV;
 		v0 = (v0 + 1) / 2;
 
-		vec2 newCoords = vec2(TexCoord.x,1-v0);
+		vec2 newCoords = vec2(1-TexCoord.x,v0);
 		//horizontal info was stored in the Red component
 		return texture2D(mapSampler, newCoords).r;
 }

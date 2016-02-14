@@ -18,13 +18,12 @@ void main(){
 	//convert back from [-1,1] domain to [0,1] domain
 	v0 = (v0 + 1.0f) / 2.0f;
 
-	//we now have the coordinates for reading from the initial image
-	vec2 horizontalV = vec2(UV.x,1-v0);
-	vec2 verticalV = vec2(v0,1-UV.x);
+	vec2 newCoords = vec2(UV.s,v0);
+
+	float horizontal = texture2D(inputSampler, newCoords).r;
+	float vertical = texture2D(inputSampler,newCoords.ts).r;
 
 	//read for both horizontal and vertical direction and store them in separate channels
-	float horizontal = texture2D(inputSampler, horizontalV).r;
-	float vertical = texture2D(inputSampler, verticalV).r;
 	distortedVertex  = vec4(horizontal,vertical ,0,1);
 
 
