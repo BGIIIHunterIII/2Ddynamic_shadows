@@ -26,6 +26,7 @@ public class ShaderTester {
     int drawProgram;
     int blurVProgram;
     int blurHProgram;
+    int blurProgram;
 
     int testProgram;
 
@@ -131,6 +132,7 @@ public class ShaderTester {
         distortionProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/distortImage.frag");
         reductionProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/horizontalReduction.frag");
         drawProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/drawShadows.frag");
+        blurProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/simpleGaussianBlur.frag");
 
         //******** init stream voa environment
         streamVBO = glGenBuffers();

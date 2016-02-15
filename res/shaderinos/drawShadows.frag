@@ -44,11 +44,8 @@ void main(){
 
 	float debug = shadowMapDistance/512f;
 
-	result = vec4(vec3(light),1);
-	//result = vec4(texture2D(mapSampler,UV).rgb,1);
-	//result = vec4(vec3(texture2D(mapSampler,UV).r/512f),1);
-
-//	  result.b = length(TexCoord - 0.5f);
+  //store distance in blue component, for nicer blur
+	result = vec4(light,0,length(UV-0.5f),1);
 }
 
 
@@ -63,7 +60,7 @@ float GetShadowDistanceH(vec2 TexCoord, float displacementV)
 		v0+=displacementV;
 		v0 = (v0 + 1) / 2;
 
-		vec2 newCoords = vec2(1-TexCoord.x,v0);
+		vec2 newCoords = vec2(1-TexCoord.x,1-v0);
 		//horizontal info was stored in the Red component
 		return texture2D(mapSampler, newCoords).r;
 }
@@ -79,7 +76,7 @@ float GetShadowDistanceV(vec2 TexCoord, float displacementV)
 		v0+=displacementV;
 		v0 = (v0 + 1) / 2;
 
-		vec2 newCoords = vec2(TexCoord.y,1-v0);
+		vec2 newCoords = vec2(TexCoord.y,v0);
 		//vertical info was stored in the Green component
 		return texture2D(mapSampler, newCoords).g;
 }

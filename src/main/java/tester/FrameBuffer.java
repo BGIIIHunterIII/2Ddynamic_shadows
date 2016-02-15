@@ -4,6 +4,7 @@ import org.lwjgl.opengl.EXTFramebufferObject;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -35,17 +36,17 @@ public class FrameBuffer {
     private int textureHandle;
     private int depthBufferHandle;
 
-    public FrameBuffer(type underLyingDataType, boolean createDepthBuffer, int width, int height) {
+    public FrameBuffer(type underLyingDataType, boolean createDepthBuffer, int width, int height,int minFilter) {
         this.width = width;
         this.height = height;
 
         switch (underLyingDataType) {
 
             case FLOAT:
-                genFBOwithRGBA32F(width, height);
+                genFBOwithRGBA32F(width, height,minFilter);
                 break;
             case INT:
-                break;
+                throw new NotImplementedException();
         }
 
 
@@ -93,7 +94,7 @@ public class FrameBuffer {
      * @param height
      * @return array with fboHandle at 0, textureID at 1, depthID at 2
      */
-    private int[] genFBOwithRGBA32F(int width, int height) {
+    private int[] genFBOwithRGBA32F(int width, int height,int minFilter) {
 
         IntBuffer buffer = ByteBuffer.allocateDirect(1 * 4).order(ByteOrder.nativeOrder()).asIntBuffer(); // allocate a 1 int byte buffer
         EXTFramebufferObject.glGenFramebuffersEXT(buffer); // generate
@@ -102,7 +103,7 @@ public class FrameBuffer {
 
         textureHandle = glGenTextures();
         glBindTexture(GL_TEXTURE_2D, textureHandle);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);

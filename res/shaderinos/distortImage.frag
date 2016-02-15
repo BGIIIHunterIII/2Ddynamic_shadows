@@ -10,8 +10,8 @@ out vec4 distortedVertex;
 void main(){
 
 	//translate u and v from [0,1] into [-1 , 1] domain
-	float u0 = UV.x * 2.0f - 1.0f;
-	float v0 = UV.y * 2.0f - 1.0f;
+	float u0 = UV.s * 2.0f - 1.0f;
+	float v0 = UV.t * 2.0f - 1.0f;
 
 	//then, as u0 approaches 0 (the center), v should also approach 0
 	v0 = v0 * abs(u0);
