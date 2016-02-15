@@ -24,14 +24,9 @@ public class ShaderTester {
     int distortionProgram;
     int reductionProgram;
     int drawProgram;
-    int blurVProgram;
-    int blurHProgram;
+    //    int blurVProgram;
+    //    int blurHProgram;
     int blurProgram;
-
-    int testProgram;
-
-    int texture;
-    int fbo;
 
     int vaoStream;
     int streamVBO;
@@ -48,7 +43,7 @@ public class ShaderTester {
      * @param vertPath vertex shader
      * @param fragPath fragment shader
      * @return a valid programID
-     * <p/>
+     * <p>
      * shaderprogram can be used like this
      * if(shaderLoadedCorrectly)
      * ARBShaderObjects.glUseProgramObjectARB(program);
@@ -127,7 +122,6 @@ public class ShaderTester {
     }
 
     private void init() {
-        testProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/testFragger.frag");
         distanceProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/calcDistances.frag");
         distortionProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/distortImage.frag");
         reductionProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/horizontalReduction.frag");
@@ -164,12 +158,6 @@ public class ShaderTester {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indicesBuffer);
         glBindVertexArray(0);
 
-
-    }
-
-    public void calculateShadows() {
-        //GL_Helper.renderToFBO(shadowCastersFBO,Config.WIDTH,Config.HEIGHT);
-        //ARBShaderObjects.glUseProgramObjectARB(distanceProgram);
 
     }
 

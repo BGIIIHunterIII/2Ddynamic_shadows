@@ -5,7 +5,6 @@ in vec2 UV;
 
 uniform sampler2D mapSampler;//tex1
 uniform vec2 renderTargetSize;
-uniform vec2 targetTextureDimensions;
 
 out vec4 result;
 
