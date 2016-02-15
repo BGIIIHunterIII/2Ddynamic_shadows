@@ -3,9 +3,7 @@
 in vec2 UV;
 uniform sampler2D inputSampler;
 
-out vec4 distortedVertex;
-
-// TODO rotation
+out vec4 distortedTexel;
 
 void main(){
 
@@ -24,11 +22,5 @@ void main(){
 	float vertical = texture2D(inputSampler,newCoords.ts).r;
 
 	//read for both horizontal and vertical direction and store them in separate channels
-	distortedVertex  = vec4(horizontal,vertical ,0,1);
-
-
-	//debug - check if texture has correct float values (distance * texturedimension.x) almost always > 1
-	//distortedVertex = vec4(vec3(texture2D(inputSampler, UV).r==0.8f?1:0),1);
-	//distortedVertex = vec4(texture2D(inputSampler,UV).rgb,1);
-	//distortedVertex = vec4(1,512,0,1); //yellow for ze debugging
+	distortedTexel  = vec4(horizontal,vertical ,0,1);
 }

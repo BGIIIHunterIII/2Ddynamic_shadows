@@ -5,24 +5,25 @@
 * saves distance in the red channel of output
 *
 */
+#define minOpacity 0.7
+#define minAlpha 1f - minOpacity
 
-// texture coordinates
 in vec2 UV;
 
 uniform sampler2D shadowCastersTexture;
 uniform vec2 textureDimension;
 
-out vec4 color;
+out vec4 distanceTexel;
 
 void main(){
 
-    color = texture2D(shadowCastersTexture,UV);
+    distanceTexel = texture2D(shadowCastersTexture,UV);
 
+    //distance from center of the screen (light's position)
     vec2 centerToPixel = UV - vec2(0.5);
-    float dist = color.a > 0.3f?length(centerToPixel):1.0f;
+    // only pixels with opacity of more than 0.7 cast shadows
+    float dist = distanceTexel.a > minAlpha?length(centerToPixel):1.0f;
+    dist *= textureDimension.x;
 
-    //dist *= textureDimension.x;
-    dist *= 512; //comment out for debugging
-
-    color = vec4(dist,0,0,1);
+    distanceTexel = vec4(dist,0,0,1);
 }

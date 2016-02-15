@@ -5,6 +5,7 @@ in vec2 UV;
 
 uniform sampler2D mapSampler;//tex1
 uniform vec2 renderTargetSize;
+uniform vec2 targetTextureDimensions;
 
 out vec4 result;
 
@@ -14,11 +15,8 @@ float GetShadowDistanceV(vec2 TexCoord, float displacementV);
 
 void main(){
 	// distance of this pixel from the center
-  vec2 centerToPixel = UV - vec2(0.5);
-  float distance = length(centerToPixel);
-
-
-  distance *=512;
+  float distance = length(UV - vec2(0.5));
+  distance *= renderTargetSize.x;
 	//apply a 2-pixel bias
 	distance = distance -2f;
 
@@ -41,10 +39,6 @@ void main(){
 	//if distance to this pixel is lower than distance from shadowMap,
 	//then we are not in shadow
 	float light = distance < shadowMapDistance? 1:0;
-
-	float debug = shadowMapDistance/512f;
-
-  //store distance in blue component, for nicer blur
 	result = vec4(light,0,length(UV-0.5f),1);
 }
 
