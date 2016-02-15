@@ -13,17 +13,6 @@ import java.nio.IntBuffer;
 
 import static org.lwjgl.opengl.EXTFramebufferObject.GL_FRAMEBUFFER_EXT;
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL12.*;
-import static org.lwjgl.opengl.GL13.*;
-import static org.lwjgl.opengl.GL14.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL21.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL32.*;
-import static org.lwjgl.opengl.GL33.*;
-import static org.lwjgl.opengl.GL30.*;
-
-
 import static org.lwjgl.opengl.GL30.GL_RGBA32F;
 import static org.lwjgl.opengl.GL30.glBindFramebuffer;
 
@@ -36,14 +25,14 @@ public class FrameBuffer {
     private int textureHandle;
     private int depthBufferHandle;
 
-    public FrameBuffer(type underLyingDataType, boolean createDepthBuffer, int width, int height,int minFilter) {
+    public FrameBuffer(type underLyingDataType, boolean createDepthBuffer, int width, int height, int minFilter) {
         this.width = width;
         this.height = height;
 
         switch (underLyingDataType) {
 
             case FLOAT:
-                genFBOwithRGBA32F(width, height,minFilter);
+                genFBOwithRGBA32F(width, height, minFilter);
                 break;
             case INT:
                 throw new NotImplementedException();
@@ -94,7 +83,7 @@ public class FrameBuffer {
      * @param height
      * @return array with fboHandle at 0, textureID at 1, depthID at 2
      */
-    private int[] genFBOwithRGBA32F(int width, int height,int minFilter) {
+    private int[] genFBOwithRGBA32F(int width, int height, int minFilter) {
 
         IntBuffer buffer = ByteBuffer.allocateDirect(1 * 4).order(ByteOrder.nativeOrder()).asIntBuffer(); // allocate a 1 int byte buffer
         EXTFramebufferObject.glGenFramebuffersEXT(buffer); // generate
