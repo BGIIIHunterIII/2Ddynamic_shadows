@@ -38,11 +38,12 @@ public class SimpleSlickGame extends BasicGame {
     int mvpDrawProgam;
     int mvpBlurProgram;
     int directionLocation_BlurProgram;
-    int vao;
     int indicesBuffer;
     int vertexBuffer;
     int uvBuffer;
     FloatBuffer mvpMatrixBuffer = BufferUtils.createFloatBuffer(16);
+    QuadVAO vao;
+    UpdateableQuadVAO streamDrawVAO;
 
     FrameBuffer distanceFBO;
     FrameBuffer distortionFBO;
@@ -140,32 +141,8 @@ public class SimpleSlickGame extends BasicGame {
             reductionCalcFBO.add(new FrameBuffer(FrameBuffer.type.FLOAT, false, (int) Math.pow(2, i), h, GL_NEAREST));
         }
 
-        vertexBuffer = glGenBuffers();
-        glBindBuffer(GL15.GL_ARRAY_BUFFER, vertexBuffer);
-        glBufferData(GL15.GL_ARRAY_BUFFER, (FloatBuffer) BufferUtils.createFloatBuffer(12).put(new float[]{
-                0, 0, 0.0f,
-                w, 0, 0.0f,
-                w, h, 0.0f,
-                0, h, 0.0f})
-                .flip(), GL15.GL_STATIC_DRAW);
-
-        //indices for a quad made up of two triangles
-        indicesBuffer = glGenBuffers();
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indicesBuffer);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, (ShortBuffer) BufferUtils.createShortBuffer(6).put(new short[]{
-                0, 1, 2,
-                2, 3, 0
-        }).flip(), GL_STATIC_DRAW); //flip() optimizes the buffer for read operations
-
-        uvBuffer = glGenBuffers();
-        glBindBuffer(GL15.GL_ARRAY_BUFFER, uvBuffer);
-        glBufferData(GL15.GL_ARRAY_BUFFER, (FloatBuffer) BufferUtils.createFloatBuffer(8).put(new float[]{
-                0.0f, 0.0f,
-                1.0f, 0.0f,
-                1.0f, 1.0f,
-                0.0f, 1.0f,
-
-        }).flip(), GL_STATIC_DRAW);
+        vao = new QuadVAO(w,h);
+        streamDrawVAO = new UpdateableQuadVAO(w,h);
 
 
         glViewport(0, 0, w, h); //not neeeded but why? TODO
@@ -177,18 +154,7 @@ public class SimpleSlickGame extends BasicGame {
         mvp.store(mvpMatrixBuffer);
         mvpMatrixBuffer.flip();//prepare for read
 
-        vao = glGenVertexArrays();
-        glBindVertexArray(vao);
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
 
-        glEnableVertexAttribArray(1);
-        glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
-        glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indicesBuffer);
-        glBindVertexArray(0);
 
         glDisable(GL_DEPTH_TEST);
         glClearColor(0, 0, 0, 1);
@@ -231,11 +197,7 @@ public class SimpleSlickGame extends BasicGame {
 
         GL20.glUniform2f(textureDimensionsLocation_DistanceProgram, shadowCasters.getWidth(), shadowCasters.getHeight());
         GL20.glUniformMatrix4(mvpDistanceProgram, false, mvpMatrixBuffer);
-
-        //draw quad consisting of two traingles
-        glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-        GL30.glBindVertexArray(0);
+        vao.drawQuad();
 
         shaderTester.stopUsingProgram();
 
@@ -246,10 +208,7 @@ public class SimpleSlickGame extends BasicGame {
 
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, distanceFBO.getTextureHandle());
         GL20.glUniformMatrix4(mvpDistortionProgam, false, mvpMatrixBuffer);
-
-        glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-        GL30.glBindVertexArray(0);
+        vao.drawQuad();
 
         shaderTester.stopUsingProgram();
 
@@ -262,7 +221,8 @@ public class SimpleSlickGame extends BasicGame {
         GL20.glUniform2f(targetTextureDimensionLocation_ReductionProgram, 1.0f / distortionFBO.getWidth(), 1.0f / distortionFBO.getHeight());
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, distortionFBO.getTextureHandle());
         GL20.glUniformMatrix4(mvpReductionProgam, false, mvpMatrixBuffer);
-        shaderTester.updateVBOandDraw(w / 2, h);
+        streamDrawVAO.update(w/2,h);
+        QuadVAO.drawWithCurrentlyBoundVAO();
 
         for (int i = 1; i < reductionCalcFBO.size(); i++) {
             int n = reductionCalcFBO.size() - 1 - i;
@@ -272,7 +232,9 @@ public class SimpleSlickGame extends BasicGame {
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, reductionCalcFBO.get(n + 1).getTextureHandle());
             GL20.glUniformMatrix4(mvpReductionProgam, false, mvpMatrixBuffer);
 
-            shaderTester.updateVBOandDraw(reductionCalcFBO.get(n).getWidth(), reductionCalcFBO.get(n).getHeight());
+            streamDrawVAO.update(reductionCalcFBO.get(n).getWidth(), reductionCalcFBO.get(n).getHeight());
+            QuadVAO.drawWithCurrentlyBoundVAO();
+
         }
         shaderTester.stopUsingProgram();
 
@@ -287,10 +249,7 @@ public class SimpleSlickGame extends BasicGame {
 
         GL20.glUniformMatrix4(mvpDrawProgam, false, mvpMatrixBuffer);
         GL20.glUniform2f(renderTargetSizeLocation_DrawProgram, w, h);
-
-        glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-        GL30.glBindVertexArray(0);
+        vao.drawQuad();
 
         shaderTester.stopUsingProgram();
 
@@ -305,17 +264,13 @@ public class SimpleSlickGame extends BasicGame {
         GL20.glUniform2f(directionLocation_BlurProgram, 0, 1f);
         GL20.glUniformMatrix4(mvpBlurProgram, false, mvpMatrixBuffer);
 
-        glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-        GL30.glBindVertexArray(0);
+        vao.drawQuad();
 
         //blur horizontal to screen
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
         GL20.glUniform2f(directionLocation_BlurProgram, 1f, 0);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, shadowsFBO.getTextureHandle());
-        glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-        GL30.glBindVertexArray(0);
+        vao.drawQuad();
 
         shaderTester.stopUsingProgram();
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
@@ -328,6 +283,5 @@ public class SimpleSlickGame extends BasicGame {
 
         int glError = glGetError();
         if (glError != 0) System.err.println("gl error: " + glError);
-
     }
 }

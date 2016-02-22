@@ -24,8 +24,6 @@ public class ShaderTester {
     int distortionProgram;
     int reductionProgram;
     int drawProgram;
-    //    int blurVProgram;
-    //    int blurHProgram;
     int blurProgram;
 
     int vaoStream;
