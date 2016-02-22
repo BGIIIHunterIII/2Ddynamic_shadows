@@ -29,6 +29,8 @@ public class SimpleSlickGame extends BasicGame {
     Image cat4;
     Image shadowCasters;
     FBOGraphics shadowCastersFBO;
+    FBOGraphics shadow;
+    Image shadowTexture;
     int targetTextureDimensionLocation_ReductionProgram;
     int textureDimensionsLocation_DistanceProgram;
     int renderTargetSizeLocation_DrawProgram;
@@ -113,9 +115,7 @@ public class SimpleSlickGame extends BasicGame {
     @Override
     public void init(GameContainer gc) throws SlickException {
         cat4 = new Image("res/sprites/entities/cat4.png");
-
         shaderTester = new ShaderTester();
-
 
         targetTextureDimensionLocation_ReductionProgram = GL20.glGetUniformLocation(shaderTester.reductionProgram, "sourceDimensions");
         textureDimensionsLocation_DistanceProgram = GL20.glGetUniformLocation(shaderTester.distanceProgram, "textureDimension");
@@ -130,6 +130,8 @@ public class SimpleSlickGame extends BasicGame {
 
         shadowCasters = new Image(w, h);
         shadowCastersFBO = new FBOGraphics(shadowCasters);
+        shadowTexture = new Image(w,h);
+        shadow = new FBOGraphics(shadowTexture);
 
         distanceFBO = new FrameBuffer(FrameBuffer.type.FLOAT, false, w, h, GL_LINEAR);
         distortionFBO = new FrameBuffer(FrameBuffer.type.FLOAT, false, w, h, GL_NEAREST);
@@ -177,11 +179,20 @@ public class SimpleSlickGame extends BasicGame {
 
         //draw centered around the mouse
         shadowCastersFBO.drawImage(cat4, Mouse.getX() - cat4.getWidth() / 2, Mouse.getY() - cat4.getHeight() / 2);
-        //shadowCastersFBO.drawImage(cat4, 0, 0);
 
+        renderShadows(shadowCasters,shadow);
 
-        //make sure opengl calls don't disturb slick - probably unecessary
-        SlickCallable.enterSafeBlock();
+        //switch back to the defaul lwjgl rendering context and draw the shadowcaster image
+        Graphics.setCurrent(g);
+        g.drawImage(shadowTexture,0,0);
+        g.drawImage(cat4, Mouse.getX() - cat4.getWidth() / 2, Mouse.getY() - cat4.getHeight() / 2);
+
+        //check for errors
+        int glError = glGetError();
+        if (glError != 0) System.err.println("gl error: " + glError);
+    }
+
+    private void renderShadows(Image shadowCasters, FBOGraphics target){
 
         //************* distance step
         //select framebuffer
@@ -266,22 +277,13 @@ public class SimpleSlickGame extends BasicGame {
 
         vao.drawQuad();
 
-        //blur horizontal to screen
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+        //blur horizontal to target FBO
+        Graphics.setCurrent(target);
         GL20.glUniform2f(directionLocation_BlurProgram, 1f, 0);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, shadowsFBO.getTextureHandle());
         vao.drawQuad();
 
         shaderTester.stopUsingProgram();
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-        SlickCallable.leaveSafeBlock();
-
-        //switch back to the defaul lwjgl rendering context and draw the shadowcaster image
-        Graphics.setCurrent(g);
-
-        g.drawImage(cat4, Mouse.getX() - cat4.getWidth() / 2, Mouse.getY() - cat4.getHeight() / 2);
-
-        int glError = glGetError();
-        if (glError != 0) System.err.println("gl error: " + glError);
     }
 }
