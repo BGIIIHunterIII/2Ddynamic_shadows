@@ -18,7 +18,7 @@ import static org.lwjgl.opengl.GL30.glBindVertexArray;
 /**
  * Created by P on 05.08.2015.
  */
-public class ShaderTester {
+public class ShadowsShaderManager {
 
     int distanceProgram;
     int distortionProgram;
@@ -31,7 +31,7 @@ public class ShaderTester {
     int indicesBuffer;
     int uvBuffer;
 
-    public ShaderTester() {
+    public ShadowsShaderManager() {
         init();
     }
 
@@ -125,73 +125,13 @@ public class ShaderTester {
         reductionProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/horizontalReduction.frag");
         drawProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/drawShadows.frag");
         blurProgram = loadShaderProgram("res/shaderinos/passthroughVBO.vert", "res/shaderinos/simpleGaussianBlur.frag");
-
-        //******** init stream voa environment
-        streamVBO = glGenBuffers();
-        indicesBuffer = glGenBuffers();
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indicesBuffer);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, (ShortBuffer) BufferUtils.createShortBuffer(6).put(new short[]{
-                0, 1, 2,
-                2, 3, 0
-        }).flip(), GL_STATIC_DRAW);
-
-        uvBuffer = glGenBuffers();
-        glBindBuffer(GL15.GL_ARRAY_BUFFER, uvBuffer);
-        glBufferData(GL15.GL_ARRAY_BUFFER, (FloatBuffer) BufferUtils.createFloatBuffer(8).put(new float[]{
-                0, 0,
-                1, 0,
-                1, 1,
-                0, 1,
-
-        }).flip(), GL_STATIC_DRAW);
-
-        vaoStream = GL30.glGenVertexArrays();
-
-
-        glBindVertexArray(vaoStream);
-        glEnableVertexAttribArray(1);
-        glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
-        glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indicesBuffer);
-        glBindVertexArray(0);
-
-
     }
 
     public void useProgram(int program) {
         ARBShaderObjects.glUseProgramObjectARB(program);
     }
-
     public void stopUsingProgram() {
         ARBShaderObjects.glUseProgramObjectARB(0);
     }
-
-
-    /**
-     * drawprogram and uniforms must be setup prior to calling this function!
-     *
-     * @param width  far rigth coordinate
-     * @param height bottom y coordinate
-     */
-    public void updateVBOandDraw(int width, int height) {
-        glBindBuffer(GL15.GL_ARRAY_BUFFER, streamVBO);
-        glBufferData(GL15.GL_ARRAY_BUFFER, (FloatBuffer) BufferUtils.createFloatBuffer(12).put(new float[]{
-                0, 0, 0.0f,
-                width, 0, 0.0f,
-                width, height, 0.0f,
-                0, height, 0.0f})
-                .flip(), GL15.GL_STREAM_DRAW);
-
-        GL30.glBindVertexArray(vaoStream);
-
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, streamVBO);
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
-
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
-        GL30.glBindVertexArray(0);
-    }
-
 }
 
