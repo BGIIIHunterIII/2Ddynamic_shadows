@@ -18,10 +18,9 @@ import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
  *
  * has stream vbo instead of static one which is optimized for getting resized
  */
-public class UpdateableQuadVAO extends QuadVAO {
-    UpdateableQuadVAO(int w, int h) {
+public class UpdatableQuadVAO extends QuadVAO {
+    UpdatableQuadVAO(int w, int h) {
         super(w, h);
-
 
         glBindBuffer(GL15.GL_ARRAY_BUFFER, vertexBuffer);
         glBufferData(GL15.GL_ARRAY_BUFFER, (FloatBuffer) BufferUtils.createFloatBuffer(12).put(new float[]{
