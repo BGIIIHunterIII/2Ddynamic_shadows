@@ -4,7 +4,6 @@ import org.lwjgl.opengl.EXTFramebufferObject;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -35,7 +34,7 @@ public class FrameBuffer {
                 genFBOwithRGBA32F(width, height, minFilter);
                 break;
             case INT:
-                throw new NotImplementedException();
+                throw new UnsupportedOperationException("not implemented");
         }
 
 
