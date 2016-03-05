@@ -47,7 +47,7 @@ public class FrameBuffer {
     /**
      * binds the framebuffer's content to the active texture unit
      */
-    public void bindTexture(){
+    public void bindTexture() {
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureHandle);
     }
 

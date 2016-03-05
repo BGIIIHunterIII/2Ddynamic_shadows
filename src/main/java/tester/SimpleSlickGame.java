@@ -2,9 +2,6 @@ package tester;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.input.Mouse;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL13;
-import org.lwjgl.opengl.GL20;
 import org.lwjgl.util.vector.Matrix4f;
 import org.newdawn.slick.*;
 import org.newdawn.slick.opengl.pbuffer.FBOGraphics;
@@ -26,15 +23,6 @@ public class SimpleSlickGame extends BasicGame {
     FBOGraphics shadowCastersFBO;
     FBOGraphics shadow;
     Image shadowTexture;
-    int targetTextureDimensionLocation_ReductionProgram;
-    int textureDimensionsLocation_DistanceProgram;
-    int renderTargetSizeLocation_DrawProgram;
-    int mvpDistanceProgram;
-    int mvpDistortionProgam;
-    int mvpReductionProgam;
-    int mvpDrawProgam;
-    int mvpBlurProgram;
-    int directionLocation_BlurProgram;
     int indicesBuffer;
     int vertexBuffer;
     int uvBuffer;
@@ -112,16 +100,6 @@ public class SimpleSlickGame extends BasicGame {
         cat4 = new Image("res/sprites/entities/cat4.png");
         shadowsShaderManager = new ShadowsShaderManager();
 
-        targetTextureDimensionLocation_ReductionProgram = GL20.glGetUniformLocation(shadowsShaderManager.reductionProgram, "sourceDimensions");
-        textureDimensionsLocation_DistanceProgram = GL20.glGetUniformLocation(shadowsShaderManager.distanceProgram, "textureDimension");
-        renderTargetSizeLocation_DrawProgram = GL20.glGetUniformLocation(shadowsShaderManager.drawProgram, "renderTargetSize");
-        mvpDistanceProgram = GL20.glGetUniformLocation(shadowsShaderManager.distanceProgram, "mvp");
-        mvpDistortionProgam = GL20.glGetUniformLocation(shadowsShaderManager.distortionProgram, "mvp");
-        mvpReductionProgam = GL20.glGetUniformLocation(shadowsShaderManager.reductionProgram, "mvp");
-        mvpDrawProgam = GL20.glGetUniformLocation(shadowsShaderManager.drawProgram, "mvp");
-        mvpBlurProgram = GL20.glGetUniformLocation(shadowsShaderManager.blurProgram, "mvp");
-        directionLocation_BlurProgram = GL20.glGetUniformLocation(shadowsShaderManager.blurProgram, "dir");
-
 
         shadowCasters = new Image(w, h);
         shadowCastersFBO = new FBOGraphics(shadowCasters);
@@ -141,8 +119,6 @@ public class SimpleSlickGame extends BasicGame {
         vao = new QuadVAO(w, h);
         streamDrawVAO = new UpdatableQuadVAO(w, h);
 
-
-        glViewport(0, 0, w, h); //not neeeded but why? TODO
         Matrix4f model = new Matrix4f();
         Matrix4f view = new Matrix4f();
         Matrix4f projection = toOrtho2D(null, 0, 0, w, h, 1, -1);
@@ -186,6 +162,12 @@ public class SimpleSlickGame extends BasicGame {
         if (glError != 0) System.err.println("gl error: " + glError);
     }
 
+    /**
+     * all textures are implicitly sent to the default texture unit (GL13.GL_TEXTURE0);
+     *
+     * @param shadowCasters an Image where opaque pixels throw shadows
+     * @param target        output is stored in the texture of target FBO
+     */
     private void renderShadows(Image shadowCasters, FBOGraphics target) {
 
         //************* distance step
@@ -194,38 +176,32 @@ public class SimpleSlickGame extends BasicGame {
         glClear(GL_COLOR_BUFFER_BIT);
 
         //activate shader, while in use it will affect all drawing operations
-        shadowsShaderManager.useProgram(shadowsShaderManager.distanceProgram);
-
-        //send uniforms to the shader
-        GL13.glActiveTexture(GL13.GL_TEXTURE0);
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, shadowCasters.getTexture().getTextureID());
-
-        GL20.glUniform2f(textureDimensionsLocation_DistanceProgram, shadowCasters.getWidth(), shadowCasters.getHeight());
-        GL20.glUniformMatrix4(mvpDistanceProgram, false, mvpMatrixBuffer);
+        shadowsShaderManager.distanceProgram.useProgram();
+        shadowsShaderManager.distanceProgram.sendUniform2f(
+                "textureDimension", shadowCasters.getWidth(), shadowCasters.getHeight());
+        shadowsShaderManager.distanceProgram.sendUniformMatrix4("mvp", mvpMatrixBuffer);
+        shadowCasters.bind();
         vao.drawQuad();
-
-        shadowsShaderManager.stopUsingProgram();
 
         //************ distortion step
         distortionFBO.setAsActiveFBO();
         glClear(GL_COLOR_BUFFER_BIT);
-        shadowsShaderManager.useProgram(shadowsShaderManager.distortionProgram);
+        shadowsShaderManager.distortionProgram.useProgram();
+        shadowsShaderManager.distortionProgram.sendUniformMatrix4("mvp", mvpMatrixBuffer);
 
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, distanceFBO.getTextureHandle());
-        GL20.glUniformMatrix4(mvpDistortionProgam, false, mvpMatrixBuffer);
+        distanceFBO.bindTexture();
         vao.drawQuad();
 
-        shadowsShaderManager.stopUsingProgram();
-
         //*************** reductionCalcFBO
-        shadowsShaderManager.useProgram(shadowsShaderManager.reductionProgram);
+        shadowsShaderManager.reductionProgram.useProgram();
 
         reductionCalcFBO.get(reductionCalcFBO.size() - 1).setAsActiveFBO();
         glClear(GL_COLOR_BUFFER_BIT);
 
-        GL20.glUniform2f(targetTextureDimensionLocation_ReductionProgram, 1.0f / distortionFBO.getWidth(), 1.0f / distortionFBO.getHeight());
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, distortionFBO.getTextureHandle());
-        GL20.glUniformMatrix4(mvpReductionProgam, false, mvpMatrixBuffer);
+        shadowsShaderManager.reductionProgram.sendUniform2f(
+                "sourceDimensions", 1.0f / distortionFBO.getWidth(), 1.0f / distortionFBO.getHeight());
+        shadowsShaderManager.reductionProgram.sendUniformMatrix4("mvp", mvpMatrixBuffer);
+        distortionFBO.bindTexture();
         streamDrawVAO.update(w / 2, h);
         QuadVAO.drawWithCurrentlyBoundVAO();
 
@@ -233,50 +209,47 @@ public class SimpleSlickGame extends BasicGame {
             int n = reductionCalcFBO.size() - 1 - i;
             reductionCalcFBO.get(n).setAsActiveFBO();
             glClear(GL_COLOR_BUFFER_BIT);
-            GL20.glUniform2f(targetTextureDimensionLocation_ReductionProgram, 1.0f / reductionCalcFBO.get(n + 1).getWidth(), 1.0f / reductionCalcFBO.get(n + 1).getHeight());
-            GL11.glBindTexture(GL11.GL_TEXTURE_2D, reductionCalcFBO.get(n + 1).getTextureHandle());
-            GL20.glUniformMatrix4(mvpReductionProgam, false, mvpMatrixBuffer);
+            shadowsShaderManager.reductionProgram.sendUniform2f(
+                    "sourceDimensions", 1.0f / reductionCalcFBO.get(n + 1).getWidth(), 1.0f / reductionCalcFBO.get(n + 1).getHeight());
+            shadowsShaderManager.reductionProgram.sendUniformMatrix4("mvp", mvpMatrixBuffer);
+            reductionCalcFBO.get(n + 1).bindTexture();
 
             streamDrawVAO.update(reductionCalcFBO.get(n).getWidth(), reductionCalcFBO.get(n).getHeight());
             QuadVAO.drawWithCurrentlyBoundVAO();
 
         }
-        shadowsShaderManager.stopUsingProgram();
-
 
         //************* draw shadows
         shadowsFBO.setAsActiveFBO();
         glClear(GL_COLOR_BUFFER_BIT);
-        shadowsShaderManager.useProgram(shadowsShaderManager.drawProgram);
+        shadowsShaderManager.drawProgram.useProgram();
 
-        GL13.glActiveTexture(GL13.GL_TEXTURE0);
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, reductionCalcFBO.get(0).getTextureHandle());
+        reductionCalcFBO.get(0).bindTexture();
 
-        GL20.glUniformMatrix4(mvpDrawProgam, false, mvpMatrixBuffer);
-        GL20.glUniform2f(renderTargetSizeLocation_DrawProgram, w, h);
+        shadowsShaderManager.drawProgram.sendUniformMatrix4("mvp", mvpMatrixBuffer);
+        shadowsShaderManager.drawProgram.sendUniform2f("renderTargetSize", w, h);
         vao.drawQuad();
-
-        shadowsShaderManager.stopUsingProgram();
 
         //********************************
         // blur filter vertical
         blurFBO.setAsActiveFBO();
+        shadowsShaderManager.blurProgram.useProgram();
 
         glClear(GL_COLOR_BUFFER_BIT);
-        GL13.glActiveTexture(GL13.GL_TEXTURE0);
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, shadowsFBO.getTextureHandle());
-        shadowsShaderManager.useProgram(shadowsShaderManager.blurProgram);
-        GL20.glUniform2f(directionLocation_BlurProgram, 0, 1f);
-        GL20.glUniformMatrix4(mvpBlurProgram, false, mvpMatrixBuffer);
+        shadowsFBO.bindTexture();
+        //vertical blur
+        shadowsShaderManager.blurProgram.sendUniform2f("dir", 0, 1);
+        shadowsShaderManager.blurProgram.sendUniformMatrix4("mvp", mvpMatrixBuffer);
         vao.drawQuad();
 
         //blur horizontal to target FBO
         Graphics.setCurrent(target);
-        GL20.glUniform2f(directionLocation_BlurProgram, 1f, 0);
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, shadowsFBO.getTextureHandle());
+        //horizontal blur
+        shadowsShaderManager.blurProgram.sendUniform2f("dir", 1, 0);
+        shadowsFBO.bindTexture();
         vao.drawQuad();
 
-        shadowsShaderManager.stopUsingProgram();
+        ShaderProgram.disablePrograms();
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
     }
 }
