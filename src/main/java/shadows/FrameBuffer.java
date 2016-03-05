@@ -1,4 +1,4 @@
-package tester;
+package shadows;
 
 import org.lwjgl.opengl.EXTFramebufferObject;
 import org.lwjgl.opengl.GL11;

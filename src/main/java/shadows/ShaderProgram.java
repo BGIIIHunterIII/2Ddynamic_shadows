@@ -1,7 +1,6 @@
-package tester;
+package shadows;
 
 import org.lwjgl.opengl.*;
-import org.lwjgl.util.vector.Matrix4f;
 
 import java.io.IOException;
 import java.nio.FloatBuffer;

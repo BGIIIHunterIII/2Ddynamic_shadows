@@ -22,7 +22,7 @@ def lwjglVersion = "2.9.3"
 def box2dLightsVersion = "1.3"
 
 //GLOBAL VARS
-mainClassName = 'tester.SimpleSlickGame'
+mainClassName = 'shadows.Main'
 
 // In this section you declare where to find the dependencies of your project
 repositories {

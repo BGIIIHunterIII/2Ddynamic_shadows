@@ -1,4 +1,4 @@
-package tester;
+package shadows;
 
 /**
  * Created by P on 05.08.2015.

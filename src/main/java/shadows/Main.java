@@ -1,4 +1,4 @@
-package tester;
+package shadows;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.input.Mouse;
@@ -13,7 +13,7 @@ import static org.lwjgl.opengl.EXTFramebufferObject.GL_FRAMEBUFFER_EXT;
 import static org.lwjgl.opengl.EXTFramebufferObject.glBindFramebufferEXT;
 import static org.lwjgl.opengl.GL11.*;
 
-public class SimpleSlickGame extends BasicGame {
+public class Main extends BasicGame {
     final static int w = 512;
     final static int h = 512;
 
@@ -36,14 +36,14 @@ public class SimpleSlickGame extends BasicGame {
     FrameBuffer shadowsFBO;
     FrameBuffer blurFBO;
 
-    public SimpleSlickGame(String gamename) {
+    public Main(String gamename) {
         super(gamename);
     }
 
     public static void main(String[] args) {
         try {
             AppGameContainer appgc;
-            appgc = new AppGameContainer(new SimpleSlickGame("Simple Slick Game"));
+            appgc = new AppGameContainer(new Main("Simple Slick Game"));
             appgc.setDisplayMode(w, h, false);
             appgc.start();
         } catch (SlickException ex) {
