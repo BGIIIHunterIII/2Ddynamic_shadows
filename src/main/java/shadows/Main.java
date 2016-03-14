@@ -7,10 +7,7 @@ import org.newdawn.slick.*;
 import org.newdawn.slick.opengl.pbuffer.FBOGraphics;
 
 import java.nio.FloatBuffer;
-import java.util.ArrayList;
 
-import static org.lwjgl.opengl.EXTFramebufferObject.GL_FRAMEBUFFER_EXT;
-import static org.lwjgl.opengl.EXTFramebufferObject.glBindFramebufferEXT;
 import static org.lwjgl.opengl.GL11.*;
 
 public class Main extends BasicGame {
@@ -19,22 +16,13 @@ public class Main extends BasicGame {
 
     ShadowsShaderManager shadowsShaderManager;
     Image cat4;
-    Image shadowCasters;
+    //holds shadow-casting image
     FBOGraphics shadowCastersFBO;
+    Image shadowCasters;
+    //holds shadows
     FBOGraphics shadow;
     Image shadowTexture;
-    int indicesBuffer;
-    int vertexBuffer;
-    int uvBuffer;
     FloatBuffer mvpMatrixBuffer = BufferUtils.createFloatBuffer(16);
-    QuadVAO vao;
-    UpdatableQuadVAO streamDrawVAO;
-
-    FrameBuffer distanceFBO;
-    FrameBuffer distortionFBO;
-    final ArrayList<FrameBuffer> reductionCalcFBO = new ArrayList<>();
-    FrameBuffer shadowsFBO;
-    FrameBuffer blurFBO;
 
     public Main(String gamename) {
         super(gamename);
@@ -98,26 +86,10 @@ public class Main extends BasicGame {
     @Override
     public void init(GameContainer gc) throws SlickException {
         cat4 = new Image("res/sprites/entities/cat4.png");
-        shadowsShaderManager = new ShadowsShaderManager();
-
-
         shadowCasters = new Image(w, h);
         shadowCastersFBO = new FBOGraphics(shadowCasters);
         shadowTexture = new Image(w, h);
         shadow = new FBOGraphics(shadowTexture);
-
-        distanceFBO = new FrameBuffer(FrameBuffer.type.FLOAT, false, w, h, GL_LINEAR);
-        distortionFBO = new FrameBuffer(FrameBuffer.type.FLOAT, false, w, h, GL_NEAREST);
-        shadowsFBO = new FrameBuffer(FrameBuffer.type.FLOAT, false, w, h, GL_LINEAR);
-        blurFBO = new FrameBuffer(FrameBuffer.type.FLOAT, false, w, h, GL_LINEAR);
-
-        final int nReductions = (int) (Math.log(w) / Math.log(2) + 1e-12);
-        for (int i = 1; i < nReductions; i++) {
-            reductionCalcFBO.add(new FrameBuffer(FrameBuffer.type.FLOAT, false, (int) Math.pow(2, i), h, GL_NEAREST));
-        }
-
-        vao = new QuadVAO(w, h);
-        streamDrawVAO = new UpdatableQuadVAO(w, h);
 
         Matrix4f model = new Matrix4f();
         Matrix4f view = new Matrix4f();
@@ -127,16 +99,17 @@ public class Main extends BasicGame {
         mvp.store(mvpMatrixBuffer);
         mvpMatrixBuffer.flip();//prepare for read
 
-
         glDisable(GL_DEPTH_TEST);
         glClearColor(0, 0, 0, 1);
+
+        shadowsShaderManager = new ShadowsShaderManager(mvpMatrixBuffer, w, h);
 
         int glError = glGetError();
         if (glError != 0) System.err.println("gl error during initalization: " + glError);
     }
 
     @Override
-    public void update(GameContainer gc, int delta) throws SlickException {
+    public void update(GameContainer container, int delta) throws SlickException {
 
     }
 
@@ -147,12 +120,12 @@ public class Main extends BasicGame {
         Graphics.setCurrent(shadowCastersFBO);
         shadowCastersFBO.clear();
 
-        //draw centered around the mouse
+        //fill shadowcasters texture
+        //draw image centered around the mouse
         shadowCastersFBO.drawImage(cat4, Mouse.getX() - cat4.getWidth() / 2, Mouse.getY() - cat4.getHeight() / 2);
 
-        renderShadows(shadowCasters, shadow);
+        shadowsShaderManager.renderShadows(shadowCasters, shadow);
 
-        //switch back to the defaul lwjgl rendering context and draw the shadowcaster image
         Graphics.setCurrent(g);
         g.drawImage(shadowTexture, 0, 0);
         g.drawImage(cat4, Mouse.getX() - cat4.getWidth() / 2, Mouse.getY() - cat4.getHeight() / 2);
@@ -160,96 +133,5 @@ public class Main extends BasicGame {
         //check for errors
         int glError = glGetError();
         if (glError != 0) System.err.println("gl error: " + glError);
-    }
-
-    /**
-     * all textures are implicitly sent to the default texture unit (GL13.GL_TEXTURE0);
-     *
-     * @param shadowCasters an Image where opaque pixels throw shadows
-     * @param target        output is stored in the texture of target FBO
-     */
-    private void renderShadows(Image shadowCasters, FBOGraphics target) {
-
-        //************* distance step
-        //select framebuffer
-        distanceFBO.setAsActiveFBO();
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        //activate shader, while in use it will affect all drawing operations
-        shadowsShaderManager.distanceProgram.useProgram();
-        shadowsShaderManager.distanceProgram.sendUniform2f(
-                "textureDimension", shadowCasters.getWidth(), shadowCasters.getHeight());
-        shadowsShaderManager.distanceProgram.sendUniformMatrix4("mvp", mvpMatrixBuffer);
-        shadowCasters.bind();
-        vao.drawQuad();
-
-        //************ distortion step
-        distortionFBO.setAsActiveFBO();
-        glClear(GL_COLOR_BUFFER_BIT);
-        shadowsShaderManager.distortionProgram.useProgram();
-        shadowsShaderManager.distortionProgram.sendUniformMatrix4("mvp", mvpMatrixBuffer);
-
-        distanceFBO.bindTexture();
-        vao.drawQuad();
-
-        //*************** reductionCalcFBO
-        shadowsShaderManager.reductionProgram.useProgram();
-
-        reductionCalcFBO.get(reductionCalcFBO.size() - 1).setAsActiveFBO();
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        shadowsShaderManager.reductionProgram.sendUniform2f(
-                "sourceDimensions", 1.0f / distortionFBO.getWidth(), 1.0f / distortionFBO.getHeight());
-        shadowsShaderManager.reductionProgram.sendUniformMatrix4("mvp", mvpMatrixBuffer);
-        distortionFBO.bindTexture();
-        streamDrawVAO.update(w / 2, h);
-        QuadVAO.drawWithCurrentlyBoundVAO();
-
-        for (int i = 1; i < reductionCalcFBO.size(); i++) {
-            int n = reductionCalcFBO.size() - 1 - i;
-            reductionCalcFBO.get(n).setAsActiveFBO();
-            glClear(GL_COLOR_BUFFER_BIT);
-            shadowsShaderManager.reductionProgram.sendUniform2f(
-                    "sourceDimensions", 1.0f / reductionCalcFBO.get(n + 1).getWidth(), 1.0f / reductionCalcFBO.get(n + 1).getHeight());
-            shadowsShaderManager.reductionProgram.sendUniformMatrix4("mvp", mvpMatrixBuffer);
-            reductionCalcFBO.get(n + 1).bindTexture();
-
-            streamDrawVAO.update(reductionCalcFBO.get(n).getWidth(), reductionCalcFBO.get(n).getHeight());
-            QuadVAO.drawWithCurrentlyBoundVAO();
-
-        }
-
-        //************* draw shadows
-        shadowsFBO.setAsActiveFBO();
-        glClear(GL_COLOR_BUFFER_BIT);
-        shadowsShaderManager.drawProgram.useProgram();
-
-        reductionCalcFBO.get(0).bindTexture();
-
-        shadowsShaderManager.drawProgram.sendUniformMatrix4("mvp", mvpMatrixBuffer);
-        shadowsShaderManager.drawProgram.sendUniform2f("renderTargetSize", w, h);
-        vao.drawQuad();
-
-        //********************************
-        // blur filter vertical
-        blurFBO.setAsActiveFBO();
-        shadowsShaderManager.blurProgram.useProgram();
-
-        glClear(GL_COLOR_BUFFER_BIT);
-        shadowsFBO.bindTexture();
-        //vertical blur
-        shadowsShaderManager.blurProgram.sendUniform2f("dir", 0, 1);
-        shadowsShaderManager.blurProgram.sendUniformMatrix4("mvp", mvpMatrixBuffer);
-        vao.drawQuad();
-
-        //blur horizontal to target FBO
-        Graphics.setCurrent(target);
-        //horizontal blur
-        shadowsShaderManager.blurProgram.sendUniform2f("dir", 1, 0);
-        shadowsFBO.bindTexture();
-        vao.drawQuad();
-
-        ShaderProgram.disablePrograms();
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
     }
 }
